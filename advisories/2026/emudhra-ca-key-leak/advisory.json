@@ -1,0 +1,242 @@
+{
+  "schema_version": "0.1",
+  "id": "AIA-2026-0001",
+  "slug": "emudhra-ca-key-leak",
+  "title": "eMudhra intermediate CA private keys recoverable from the certificates",
+  "aliases": [],
+  "revision": 1,
+  "published": "2026-10-23",
+  "updated": "2026-10-23",
+  "publication_state": "active",
+  "check_maturity": "fixtured",
+  "severity": "critical",
+  "kind": "ca_compromise",
+  "summary": "Eight eMudhra (emSign) intermediate CAs, sixteen certificates including Sectigo AAA cross-signs, were issued with keys that can be recovered from the certificates themselves. Anyone can mint TLS or code-signing certificates for any name that chains to those intermediates. The intermediates are revoked, but most clients do not check revocation, so any trust store that still contains an anchoring root accepts forged certificates.",
+  "sources": [
+    {
+      "id": "wahp",
+      "title": "eMudhra: we have a problem (Dennis Jackson)",
+      "url": "https://emudhra.we-have-a-problem.com/",
+      "role": "reference_implementation"
+    },
+    {
+      "id": "wahp-repo",
+      "title": "galadran/we-have-a-problem.com",
+      "url": "https://github.com/galadran/we-have-a-problem.com",
+      "role": "artifacts_and_proofs"
+    }
+  ],
+  "credits": [
+    {
+      "name": "Dennis Jackson",
+      "url": "https://github.com/galadran",
+      "for": "incident write-up, signed proofs of key recovery, captured chains, test hosts and the artifact JSON this advisory's fingerprints were cross-checked against"
+    }
+  ],
+  "affected": {
+    "description": "Any trust store that contains one of the anchor roots below and has no distrust record for the compromised intermediates, or that contains a compromised intermediate directly.",
+    "rules": [
+      {
+        "type": "certificate_trust",
+        "id": "emudhra-anchors",
+        "purpose": [
+          "tls",
+          "code-signing"
+        ],
+        "anchors": [
+          {
+            "name": "emSign Root TLS CA - G3",
+            "operator": "eMudhra",
+            "sha256": "7DD78D5F4F13459A83DFF9ABBBA62EDBAF6F2D102BF257FD712F4D9F2746ED8D",
+            "ski": "E13AAB217CF1E34D54AED472B7FD8B5942209054",
+            "source": "wahp-repo",
+            "issues": "tls"
+          },
+          {
+            "name": "emSign Root CS CA - G3",
+            "operator": "eMudhra",
+            "sha256": "F2EDAAFF3D9B701FB4D14C9F285F8C0BAD90FC3BCC1FA07D47F4718EDABA34A5",
+            "ski": "687403F885CA8D5450571D16E0C8DE450DABCD2D",
+            "source": "wahp-repo",
+            "issues": "code-signing"
+          },
+          {
+            "name": "AAA Certificate Services",
+            "operator": "Sectigo (Comodo)",
+            "sha256": "D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4",
+            "ski": "A0110A233E96F107ECE2AF29EF82A57FD030A4B4",
+            "source": "wahp-repo",
+            "issues": "cross-signs for all eight intermediates"
+          },
+          {
+            "name": "emSign ECC Root CA - G3",
+            "operator": "eMudhra",
+            "sha256": "86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B",
+            "ski": "7C5D028413D4CC8A9B81CE171C2E291E9C486342",
+            "source": "wahp-repo",
+            "issues": "cross-sign of emSign Root TLS CA - G3 (sha256 3094025792039A68AF6E553686410BDAB7C0D4A36B9084CBA64202E35D6EBBDD)"
+          }
+        ],
+        "compromised": [
+          {
+            "name": "EM DV TLS CA - G3B",
+            "ski": "E21E2FE71C19390E554B62C120245735248A2514",
+            "sha256": [
+              "42C4ACCD12C4F59597925E1A08A7A90102608543809308D50EC427E118BA1493",
+              "45A883F349AEDFD5F3A649B5498FFB121712BA8B448F3F2A91DBC5A766FCDDBE"
+            ]
+          },
+          {
+            "name": "EM OV TLS CA - G3B",
+            "ski": "9BD86551AFE7E72C37AD08EE6919D9BF3784AE0A",
+            "sha256": [
+              "5F1DED4DD590AF74631290CF073B122A2AAC6A1FA479778A0BD43579BD832699",
+              "98B896625C0C230ADEEC3EB2CF6AAD5001ECF9156A68644E82374CE5833BC25B"
+            ]
+          },
+          {
+            "name": "EM EV TLS CA - G3B",
+            "ski": "3EDC20D9894698877B873FD88147B25C15D84706",
+            "sha256": [
+              "579480AEA166290BD3C643589E795FC0D0E54E86505D180F1DFF99EFD3199512",
+              "E7568FE6E12331F4FD7DE61DA4C7559D0F8EB192A218D4741A3BA75184333838"
+            ]
+          },
+          {
+            "name": "EM DV TLS CA - G3C",
+            "ski": "AE7E105C3C2996C1A847270559F1E03DD4E50AF3",
+            "sha256": [
+              "0164D7CEAE5BB909C272AF151FF44B1177AE9B47D9424B94F1D9558C30934D19",
+              "62B7F9868263F72F6911FC78CEAF72C1979158B7368BF648683BB2AA39B02E72"
+            ]
+          },
+          {
+            "name": "EM OV TLS CA - G3C",
+            "ski": "34EAEA0CEBC90ADAF9D0C5E2ED9B78C9879E1B6C",
+            "sha256": [
+              "7485B51C0ED192878FA1D2F948FB529AE1842CC5086C4B67F7BE5B2039DE9489",
+              "CB6E15165AC802E9B3F993F16C25D41F4E81C21EBDE71AE1B012AC00BF9C7C3F"
+            ]
+          },
+          {
+            "name": "EM EV TLS CA - G3C",
+            "ski": "A6255E80A94DB7F3967C1BC791DF92BCEE4BEB5F",
+            "sha256": [
+              "432EC25F0D28DE9006D97BF752F17BBB2CD41F669933FCB072D9A1148D0261F3",
+              "FD9D5C2DBBD4995AB69B8D50C439D9527B00529199C2FD01B2174EB58F07021F"
+            ]
+          },
+          {
+            "name": "EM OV CS CA - G3B",
+            "ski": "79FAE8ECCFDB0D758DA458D69FB6EDDC7C49DEE6",
+            "sha256": [
+              "9E39DE2881273ACC225A149C72BA3E0F51424963669AB633EE1DC7DF5DB067B4",
+              "A496E23AC0CAB8155FC9B117B97EAE368EFCBB9041AEC8804D5A308D2D01C2D8"
+            ]
+          },
+          {
+            "name": "EM OV CS CA - G3C",
+            "ski": "EE6F73298D6FBFA7B31BC39534F61556447866B7",
+            "sha256": [
+              "4B2460A466F95FD40113BCDCCA2CEB29B3B093921DE45474DA7DF48874C630B1",
+              "84112972B8E59D14560AE7E7119654474AAD119990CF3722BFC1E3B91615E1FD"
+            ]
+          },
+          {
+            "name": "emSign Root TLS CA - G3 (cross-signed by emSign ECC Root CA - G3)",
+            "ski": "E13AAB217CF1E34D54AED472B7FD8B5942209054",
+            "sha256": [
+              "3094025792039A68AF6E553686410BDAB7C0D4A36B9084CBA64202E35D6EBBDD"
+            ]
+          }
+        ],
+        "distrust": {
+          "pem_bundle": "none",
+          "java_keystore": "none",
+          "node_bundled": "none",
+          "nss": "unsupported_in_v0",
+          "windows": "unsupported_in_v0",
+          "macos_keychain": "unsupported_in_v0"
+        }
+      }
+    ]
+  },
+  "remediation": {
+    "summary": "Remove the anchor roots from every trust store you control, or add explicit distrust for the compromised intermediates where the store supports it. Then re-run the check.",
+    "steps_file": "fix.md"
+  },
+  "check": {
+    "requires": {
+      "read_paths": [
+        "trust stores discovered by the inventory"
+      ],
+      "binaries": {
+        "optional": [
+          "keytool",
+          "node"
+        ]
+      },
+      "network": [],
+      "scratch": false,
+      "timeout_seconds": 60
+    },
+    "limitations": [
+      "Stores with a distrust mechanism (NSS, Windows, macOS keychain) are reported as unknown in v0.",
+      "A store that trusts an anchor is reported affected even if the client using it performs CRL or OCSP checks; most do not.",
+      "Compromised intermediates are matched by certificate SHA-256 only in v0; SKI matching is listed for future store parsers that expose it."
+    ]
+  },
+  "fixtures": {
+    "directory": "fixtures",
+    "expected": [
+      {
+        "file": "affected-aaa-root.pem",
+        "store_type": "pem_bundle",
+        "verdict": "affected",
+        "why": "contains AAA Certificate Services; openssl verify accepts the *-aaa chains against this bundle"
+      },
+      {
+        "file": "affected-emsign-ecc-root-g3.pem",
+        "store_type": "pem_bundle",
+        "verdict": "affected",
+        "why": "contains emSign ECC Root CA - G3; openssl verify accepts the dv-g3b chain against this bundle"
+      },
+      {
+        "file": "affected-intermediate-pinned.pem",
+        "store_type": "pem_bundle",
+        "verdict": "affected",
+        "why": "contains EM DV TLS CA - G3B itself as a trusted certificate"
+      },
+      {
+        "file": "not-affected-isrg-only.pem",
+        "store_type": "pem_bundle",
+        "verdict": "not_affected",
+        "why": "only ISRG Root X1; openssl verify rejects every captured chain"
+      },
+      {
+        "file": "empty.pem",
+        "store_type": "pem_bundle",
+        "verdict": "unknown",
+        "why": "zero certificates parsed; cannot tell an empty store from an unreadable one"
+      },
+      {
+        "file": "malformed.pem",
+        "store_type": "pem_bundle",
+        "verdict": "unknown",
+        "why": "PEM block does not decode"
+      },
+      {
+        "file": "does-not-exist.pem",
+        "store_type": "pem_bundle",
+        "verdict": "unknown",
+        "why": "path missing"
+      },
+      {
+        "file": "not-affected-isrg-only.pem",
+        "store_type": "nss",
+        "verdict": "unknown",
+        "why": "store type unsupported in v0"
+      }
+    ]
+  }
+}
