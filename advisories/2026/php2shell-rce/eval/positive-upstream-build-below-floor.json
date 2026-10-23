@@ -1,0 +1,12 @@
+{
+  "id": "positive-upstream-build-below-floor",
+  "kind": "positive",
+  "advisory_revision": 1,
+  "coverage": "every-binary",
+  "input": {"captured_output": "dpkg-query: no packages found matching php*\ndpkg-query: no packages found matching libapache2-mod-php*\n-- block 0 done\n== /usr/local/bin/php resolves to /usr/local/bin/php\nPHP 8.4.26 (cli) (built: Sep 18 2026 02:11:40) (NTS)\n== /usr/local/sbin/php-fpm resolves to /usr/local/sbin/php-fpm\nPHP 8.4.26 (fpm-fcgi) (built: Sep 18 2026 02:11:52)\n/usr/local/bin/php\n/usr/local/sbin/php-fpm\n-- block 1 done"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["8.4.26", "8.4.27", "/usr/local/sbin/php-fpm", "affected"]
+  },
+  "note": "No distribution package explains the binary; it lives under /usr/local and prints a current-looking number. For an upstream build php -v is the comparator, and 8.4.26 is one patch below floor-php-upstream for the 8.4 branch."
+}

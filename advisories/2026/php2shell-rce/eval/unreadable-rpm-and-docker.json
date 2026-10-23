@@ -1,0 +1,12 @@
+{
+  "id": "unreadable-rpm-and-docker",
+  "kind": "unreadable",
+  "advisory_revision": 1,
+  "coverage": "system-php",
+  "input": {"captured_output": "PRETTY_NAME=\"AlmaLinux 9.8 (Midnight Oncilla)\"\nVERSION_ID=\"9.8\"\nerror: cannot open Packages database in /var/lib/rpm\n-- block 0 done\n-- block 1 done\n-- block 2 done\n-- block 3 done\n== docker images\npermission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock\n== docker running\npermission denied while trying to connect to the Docker daemon socket at unix:///var/run/docker.sock\n-- block 4 done"},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["cannot open Packages database", "permission denied", "gap", "unknown"]
+  },
+  "note": "rpm could not read its database and docker could not reach the daemon. Block 1 found nothing, but on EL the package manager is the comparator, so the package store is unread rather than empty. Two gaps, verdict unknown, and the agent does not retry with sudo."
+}

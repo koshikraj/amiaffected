@@ -1,0 +1,12 @@
+{
+  "id": "stale-advisory-negative",
+  "kind": "stale",
+  "advisory_revision": 2,
+  "coverage": "all",
+  "input": {"captured_output": "(today is 2026-12-15; advisory.json review_by is 2026-11-23)\n/etc/ssl/certs/ca-certificates.crt: parsed 121 certificates, 0 matched (121 BEGIN CERTIFICATE)\nno env bundles set\ncertifi: /usr/lib/python3/dist-packages/certifi/cacert.pem parsed 142 certificates, 0 matched\nno JDK found; node not installed"},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["review_by", "stale", "update", "unknown"]
+  },
+  "note": "Every store read negative, but the advisory is past review_by at critical severity, so not_affected is not available. The provenance header flags staleness and the agent offers the update as its own step."
+}

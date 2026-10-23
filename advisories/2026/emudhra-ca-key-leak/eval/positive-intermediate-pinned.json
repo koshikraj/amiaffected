@@ -1,0 +1,12 @@
+{
+  "id": "positive-intermediate-pinned",
+  "kind": "positive",
+  "advisory_revision": 2,
+  "coverage": "system-bundle",
+  "input": {"file": "affected-intermediate-pinned.pem"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["42C4ACCD12C4F59597925E1A08A7A90102608543809308D50EC427E118BA1493", "EM DV TLS CA - G3B", "directly", "affected"]
+  },
+  "note": "The compromised intermediate itself is in the bundle as a trusted certificate. The report must say the store trusts it directly, not only via a root."
+}

@@ -1,0 +1,7 @@
+# Advisory text and the rules influence the commands an agent proposes to
+# a user. Changes there need a second maintainer's review (docs/trust.md).
+/advisories/   @koshikraj
+/skills/       @koshikraj
+/RULES.md      @koshikraj
+/AGENTS.md     @koshikraj
+/tools/        @koshikraj

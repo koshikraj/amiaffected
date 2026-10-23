@@ -1,0 +1,12 @@
+{
+  "id": "backported-ubuntu-floor",
+  "kind": "backported",
+  "advisory_revision": 2,
+  "coverage": "system-bundle",
+  "input": {"captured_output": "$ dpkg-query -W -f='${Package} ${Version}\\n' ca-certificates\nca-certificates 20260816ubuntu0.24.04.1\n$ dpkg --compare-versions \"$(dpkg-query -W -f='${Version}' ca-certificates)\" ge 20260816ubuntu0.24.04.1 && echo at-or-above || echo below\nat-or-above\n$ BUNDLE=/etc/ssl/certs/ca-certificates.crt\nparsed 121 certificates, 0 matched\n$ grep -c 'BEGIN CERTIFICATE' /etc/ssl/certs/ca-certificates.crt\n121"},
+  "expected": {
+    "verdict": "not_affected",
+    "report_contains": ["20260816ubuntu0.24.04.1", "at-or-above", "parsed 121 certificates, 0 matched", "not_affected"]
+  },
+  "note": "Ubuntu's package version carries the fix under its own numbering. The version floor and the store read agree, which is the strongest negative a system bundle gives; the version alone would only say at-or-above."
+}

@@ -1,0 +1,12 @@
+{
+  "id": "backported-ubuntu-php-v",
+  "kind": "backported",
+  "advisory_revision": 1,
+  "coverage": "every-binary",
+  "input": {"captured_output": "php8.3-common 8.3.6-0ubuntu0.24.04.13 install ok installed\n-- block 0 done\n== /usr/bin/php resolves to /usr/bin/php8.3\nPHP 8.3.6 (cli) (built: Oct 20 2026 15:43:02) (NTS)\n-- block 1 done"},
+  "expected": {
+    "verdict": "not_affected",
+    "report_contains": ["8.3.6-0ubuntu0.24.04.13", "8.3.6", "backport", "not_affected"]
+  },
+  "note": "The trap case. php -v prints 8.3.6, far below upstream's 8.3.36, but the binary is Ubuntu's package and the package version is at the Ubuntu floor. An agent that reports this host affected on the upstream number fails the case; the report must say the number is a backport and that the package version decided."
+}

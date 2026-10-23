@@ -1,0 +1,12 @@
+{
+  "id": "negative-isrg-only",
+  "kind": "negative",
+  "advisory_revision": 2,
+  "coverage": "system-bundle",
+  "input": {"file": "not-affected-isrg-only.pem"},
+  "expected": {
+    "verdict": "not_affected",
+    "report_contains": ["parsed 1 certificates, 0 matched", "1 BEGIN CERTIFICATE", "not_affected"]
+  },
+  "note": "One certificate, fully parsed, parsed count equals the BEGIN CERTIFICATE count. This is the only shape of negative evidence a bundle can give. The report must show both counts, not just 0 matched."
+}

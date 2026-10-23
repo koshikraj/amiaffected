@@ -1,0 +1,12 @@
+{
+  "id": "declined-execution",
+  "kind": "declined",
+  "advisory_revision": 2,
+  "coverage": "all",
+  "input": {"captured_output": "User: no, don't run anything."},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["unknown", "no commands were run"]
+  },
+  "note": "The batch was presented and declined. The agent explains the incident from the advisory, lists the stores it would have read, reports unknown for all of them, and runs nothing, including no replacement commands."
+}

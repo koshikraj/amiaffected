@@ -1,0 +1,17 @@
+{
+  "name": "amiaffected",
+  "description": "Am I Affected: instructions-only security-incident advisories with read-only checks for agents.",
+  "owner": {
+    "name": "Koshik Raj",
+    "url": "https://github.com/koshikraj"
+  },
+  "plugins": [
+    {
+      "name": "amiaffected",
+      "source": "./",
+      "description": "Read-only, interactive checks of this machine against security-incident advisories. One approved batch of commands per advisory; verdicts affected, not_affected or unknown.",
+      "category": "security",
+      "tags": ["security", "advisory", "incident-response"]
+    }
+  ]
+}

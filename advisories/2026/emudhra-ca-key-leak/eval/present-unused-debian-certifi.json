@@ -1,0 +1,12 @@
+{
+  "id": "present-unused-debian-certifi",
+  "kind": "present_unused",
+  "advisory_revision": 2,
+  "coverage": "certifi",
+  "input": {"captured_output": "== python3: /usr/bin/python3 Python 3.12.3\ncertifi 2023.11.17 resolves /etc/ssl/certs/ca-certificates.crt\nssl default cafile /usr/lib/ssl/cert.pem\n== /usr/lib/python3/dist-packages/certifi/cacert.pem\nMATCH D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4\nMATCH 86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B\nparsed 146 certificates, 2 matched\nmarkers 146"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["present", "not used by", "/etc/ssl/certs/ca-certificates.crt", "affected"]
+  },
+  "note": "Debian's certifi returns the system bundle, so the file under dist-packages is present but unused by that interpreter. The report must separate the two findings. The verdict is still affected because the file is a store another interpreter or a copied virtualenv could resolve, and the fix is to upgrade it; the report says which interpreter is exposed (none found) and which file is (this one)."
+}

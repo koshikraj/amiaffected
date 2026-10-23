@@ -1,0 +1,12 @@
+{
+  "id": "present-unused-cli-only",
+  "kind": "present_unused",
+  "advisory_revision": 1,
+  "coverage": "web-sapi",
+  "input": {"captured_output": "php8.2-cli 8.2.28-1~deb12u1 install ok installed\nphp8.2-common 8.2.28-1~deb12u1 install ok installed\n-- block 0 done\n== /usr/bin/php resolves to /usr/bin/php8.2\nPHP 8.2.28 (cli) (built: Mar 13 2026 14:48:38) (NTS)\n-- block 1 done\n-- block 2 done"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["8.2.28-1~deb12u1", "8.2.35-1~deb12u1", "nothing serves", "affected"]
+  },
+  "note": "Debian 12 php8.2 below its floor, CLI only, no module, no FPM, no listener. The bugs are in the engine, so the package is affected by version; the report says no SAPI serves it, which lowers urgency and does not change the verdict. The user still upgrades."
+}
