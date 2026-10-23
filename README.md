@@ -20,13 +20,32 @@ proposes, and the user approves them before they run. See `docs/trust.md`.
 
 ## Using it with an agent
 
-1. Install or clone this repository where the agent can read it. For Claude
-   Code the skill is `skills/check/SKILL.md`; agents that read `AGENTS.md`
-   find the same rules there. Both are generated from `RULES.md`.
-2. Ask: "Am I affected by the eMudhra CA leak?" The agent reads `index.json`,
-   picks the advisories that apply, shows one batch of read-only commands per
-   advisory, and runs it only after you say yes.
-3. Read the report: per store, the quoted evidence line and the finding; then
+Claude Code, as a plugin (verified on a real install with Claude Code
+2.1.309):
+
+```sh
+claude plugin marketplace add koshikraj/amiaffected
+claude plugin install amiaffected@amiaffected
+```
+
+or in one step inside a session: `/plugin install amiaffected --marketplace
+koshikraj/amiaffected`. The plugin installs one skill, `check`; nothing in it
+executes. The plugin `version` tracks the advisory releases, so `claude plugin
+update amiaffected@amiaffected` brings new advisories and revisions; `RULES.md`
+is in the same tree, and the rules version it carries is printed in every
+report's provenance header.
+
+Any other agent: clone this repository where the agent can read it. Agents
+that read `AGENTS.md` find the rules there; both it and the skill are
+generated from `RULES.md`.
+
+Then:
+
+1. Ask: "Am I affected by the eMudhra CA leak?" or "Am I affected by
+   PHP2Shell?" The agent reads `index.json`, picks the advisories that
+   apply, shows one batch of read-only commands per advisory, and runs it
+   only after you say yes.
+2. Read the report: per store, the quoted evidence line and the finding; then
    the gaps; then the verdict. Remediation is in each advisory's `fix.md` and
    is presented for you to run, never run for you.
 
@@ -50,6 +69,9 @@ agent has been through the gate yet; this table is filled in when one has.
 - `docs/schema.md`: field reference. `docs/trust.md`: what is installed and
   what the trusted computing base is.
 - `tools/validate.py`: validator, command linter and generator; CI runs it.
+- `tools/intake/SKILL.md`: maintainer-only skill that drafts a new advisory
+  folder for review. Outside `skills/` so the plugin never installs it.
+- `.claude-plugin/`: the Claude Code plugin and marketplace manifests.
 
 ## Contributing an advisory
 

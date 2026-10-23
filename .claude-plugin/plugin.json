@@ -1,0 +1,14 @@
+{
+  "name": "amiaffected",
+  "displayName": "Am I Affected",
+  "version": "1.0.0",
+  "description": "Read-only, interactive checks of this machine against security-incident advisories (leaked CA keys, runtime RCEs). One approved batch of commands per advisory, verdicts affected / not_affected / unknown, no scripts of ours ever run.",
+  "author": {
+    "name": "Koshik Raj",
+    "url": "https://github.com/koshikraj"
+  },
+  "homepage": "https://github.com/koshikraj/amiaffected",
+  "repository": "https://github.com/koshikraj/amiaffected",
+  "license": "Apache-2.0",
+  "keywords": ["security", "advisory", "incident-response", "vulnerability", "read-only"]
+}

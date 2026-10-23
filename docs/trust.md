@@ -14,8 +14,11 @@ right to.
 - `index.json` and the `advisories/` tree: JSON that describes indicators and
   coverage, markdown with fenced check blocks, fix blocks and evaluation
   cases. No scripts, no binaries, no package of ours.
-- `tools/validate.py` is maintainer tooling run in CI. It is not installed
-  and never runs on a user's machine as part of a check.
+- `tools/validate.py` is maintainer tooling run in CI. The plugin copies the
+  whole repository tree, so the file is present on disk, but no rule, skill
+  or advisory ever invokes it; nothing in the plugin executes. The
+  maintainer intake skill under `tools/intake/` is likewise present and
+  never loaded: the plugin scans `skills/` only.
 
 ## Trusted computing base
 
@@ -53,8 +56,12 @@ commands.
 
 Until the index is signed, origin is the git commit: the provenance header
 names the commit the advisories were read from, and the files can be compared
-against `https://github.com/koshikraj/amiaffected` at that commit. Rules ship
-pinned to a tag (`rules-v1`, ...); advisories track `main`.
+against `https://github.com/koshikraj/amiaffected` at that commit. The
+Claude Code plugin is the repository root at a released version: its
+`version` in `.claude-plugin/plugin.json` is bumped for every advisory
+release and tagged, so an installed copy is one tag's tree, and
+`claude plugin update` moves to the next tag. `RULES.md` changes only with
+its own `Rules version` bump; review it at the tag you installed.
 
 ## License
 
