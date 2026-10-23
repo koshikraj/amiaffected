@@ -40,7 +40,8 @@ jobs:
           tar -xzf dist/amiaffected-check-*.tar.gz -C "$tmp"
           cd "$tmp"
           python -I "$tmp"/amiaffected-check-*/scripts/run.py validate
-          python -I "$tmp"/amiaffected-check-*/scripts/run.py check; test $? -le 2
+          # steps run under bash -e, so the exit code must be accepted inline
+          python -I "$tmp"/amiaffected-check-*/scripts/run.py check || [ $? -le 2 ]
       - name: attest build provenance
         uses: actions/attest-build-provenance@v2
         with:

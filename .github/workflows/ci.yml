@@ -21,4 +21,5 @@ jobs:
       - name: unit tests
         run: python -m unittest discover -s tests -t . -v
       - name: live check on the runner (exit 0, 1 or 2 are all valid outcomes)
-        run: python -m amiaffected check; test $? -le 2
+        # steps run under bash -e, so the exit code must be accepted inline
+        run: python -m amiaffected check || [ $? -le 2 ]
