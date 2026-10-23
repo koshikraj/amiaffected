@@ -9,31 +9,58 @@ well by OSV, Trivy and Grype. This project spends its effort on the incidents
 those tools cannot express: compromised certificate authorities, leaked
 keys, configuration-level exposure, and remediation an agent can follow.
 
+## Install
+
+Releases are single archives built by GitHub Actions from a tagged commit,
+with build provenance you verify before extracting:
+
+```
+gh attestation verify amiaffected-check-<version>.tar.gz \
+  --repo koshikraj/amiaffected \
+  --signer-workflow koshikraj/amiaffected/.github/workflows/release.yml
+sha256sum -c SHA256SUMS
+tar -xzf amiaffected-check-<version>.tar.gz
+```
+
+That proves GitHub built these exact bytes from this repository at the
+attested commit. It does not prove the code is harmless; the code is small
+enough to read, and [docs/trust.md](docs/trust.md) lists what to look at.
+No release has been published yet, so for now the honest check is to
+review the commit you are about to run.
+
+Nothing is fetched at run time. New advisories arrive only as a new
+verified archive.
+
 ## Use
 
 ```
-git clone https://github.com/koshikraj/amiaffected
-cd amiaffected
-python3 -m amiaffected check --scan-root ~/projects
+python3 -I amiaffected-check-<version>/scripts/run.py check
 ```
 
-No dependencies beyond Python 3.9+. The check reads trust stores and
-runtimes at known locations, plus the scan roots you name, and prints one
-JSON result per advisory. Exit codes: 0 not affected within the inspected
-scope, 1 affected, 2 unknown. Read the `gaps` before trusting a 0.
+`-I` keeps the current directory and `PYTHONPATH` off the import path, so
+only the bundled copy can load. The check reads trust stores at known
+system locations, plus any `--scan-root` directories you name, and prints
+one JSON result per advisory. Exit codes: 0 not affected within the
+inspected scope, 1 affected, 2 unknown. Read `gaps`, `runtime.executed` and
+`data.freshness` before trusting a 0.
 
 ```
-python3 -m amiaffected inventory      # what would be inspected, as JSON
-python3 -m amiaffected validate       # check advisory files and run fixtures
+python3 -I .../scripts/run.py inventory     # what would be inspected, as JSON
+python3 -I .../scripts/run.py validate      # check advisory files and run fixtures
 ```
+
+From a source checkout, developers run the same commands as
+`python3 -m amiaffected ...`; `python3 tools/build_bundle.py` produces the
+release layout under `dist/`.
 
 ## Use from an agent
 
-The check flow is also packaged as a skill at `skills/check/SKILL.md`.
-Copy that folder into your agent's skills directory (for Claude Code,
-`~/.claude/skills/amiaffected-check/`) and ask "am I affected by
-<incident>?". The skill runs the same CLI, locally and unprivileged, and
-reports the verdict, the gaps and the ordered remediation.
+The release archive is a skill: `SKILL.md` at its root, the tool under
+`scripts/`. Verify the archive, extract it into your agent's skills
+directory (for Claude Code, `~/.claude/skills/amiaffected-check/`), and ask
+"am I affected by <incident>?". The skill runs only the copy beside it,
+locally, unprivileged, with no network, and reports the verdict, the gaps,
+what executed, and the ordered remediation.
 
 ## Advisories
 
@@ -49,14 +76,17 @@ reports the verdict, the gaps and the ordered remediation.
   in the inventory makes the overall verdict `unknown`.
 - Raw inventory never leaves the machine.
 - Advisories are data. Detection rule types are implemented once in the
-  matcher; no advisory ships code. No fetch-and-exec, ever.
+  matcher; no advisory ships code. No fetch-and-exec, ever: nothing is
+  cloned, pulled or downloaded at run time, and a path found in an inventory
+  never selects an executable.
 - Every fixtured advisory has known-affected, known-clean and unknown
   fixtures whose expected verdicts were established independently of the
   matcher.
 - New incidents are triaged by humans. Feeds produce drafts, not checks.
 
 See [docs/schema.md](docs/schema.md) for the advisory, inventory and result
-formats.
+formats, and [docs/trust.md](docs/trust.md) for what to verify before letting
+an agent run this.
 
 ## Layout
 
@@ -64,6 +94,7 @@ formats.
 advisories/<year>/<slug>/   advisory.json, advisory.md, fix.md, fixtures/
 amiaffected/                stdlib Python: inventory, matcher, rules, CLI
 docs/                       schema and user-facing documentation
-skills/check/               agent skill wrapping the check flow
+skills/check/               agent skill text; tools/build_bundle.py adds the code beside it
+tools/                      bundle builder and launcher used by the release workflow
 tests/                      unittest suite; CI runs validate + tests
 ```

@@ -1,0 +1,53 @@
+name: release
+
+# Tag vX.Y.Z (matching amiaffected.__version__) to publish one verifiable
+# skill bundle. The attestation binds the archive digest to this repository,
+# this workflow and the tagged commit; users verify it with
+#   gh attestation verify <archive> --repo koshikraj/amiaffected \
+#     --signer-workflow koshikraj/amiaffected/.github/workflows/release.yml
+# before extracting or loading SKILL.md.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: write
+  id-token: write
+  attestations: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: tag must match the package version
+        run: |
+          v=$(python -c "import amiaffected;print(amiaffected.__version__)")
+          test "v$v" = "$GITHUB_REF_NAME" || { echo "tag $GITHUB_REF_NAME != v$v"; exit 1; }
+      - name: validate advisories and fixtures
+        run: python -m amiaffected validate
+      - name: unit tests
+        run: python -m unittest discover -s tests -t . -v
+      - name: build the bundle
+        run: python tools/build_bundle.py --out dist --source-commit "$GITHUB_SHA"
+      - name: test the extracted bundle outside the repository
+        run: |
+          set -e
+          tmp=$(mktemp -d)
+          tar -xzf dist/amiaffected-check-*.tar.gz -C "$tmp"
+          cd "$tmp"
+          python -I "$tmp"/amiaffected-check-*/scripts/run.py validate
+          python -I "$tmp"/amiaffected-check-*/scripts/run.py check; test $? -le 2
+      - name: attest build provenance
+        uses: actions/attest-build-provenance@v2
+        with:
+          subject-path: dist/amiaffected-check-*.tar.gz
+      - name: create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release create "$GITHUB_REF_NAME" dist/amiaffected-check-*.tar.gz dist/SHA256SUMS \
+            --title "$GITHUB_REF_NAME" --notes-file dist/RELEASE_NOTES.md
