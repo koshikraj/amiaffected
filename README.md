@@ -62,6 +62,11 @@ directory (for Claude Code, `~/.claude/skills/amiaffected-check/`), and ask
 locally, unprivileged, with no network, and reports the verdict, the gaps,
 what executed, and the ordered remediation.
 
+The agent asks before it runs anything, and says what will be read and
+which programs may execute. Say no and it checks by hand instead: every
+advisory carries a "Check by hand" section of read-only commands the agent
+proposes one at a time, and the report says it was a manual check.
+
 ## Advisories
 
 | ID | Incident | Rule | Maturity |

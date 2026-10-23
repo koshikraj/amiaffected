@@ -1,6 +1,6 @@
 ---
 name: amiaffected-check
-description: Check whether this machine or container is affected by a curated security incident (compromised CA, leaked key, critical CVE) using the local, read-only amiaffected tool bundled with this skill, then explain the verdict and the ordered remediation. Use when the user asks "am I affected by X", asks to check their machine, trust stores or runtimes against a recent incident, or when a new advisory lands.
+description: Check whether this machine or container is affected by a curated security incident (compromised CA, leaked key, critical CVE) using the local, read-only amiaffected tool bundled with this skill, then explain the verdict and the ordered remediation. Use when the user asks "am I affected by X", asks to check their machine, trust stores or runtimes against a recent incident, or when a new advisory lands and the user wants to know whether it concerns them. Always asks before executing the bundled tool; if the user declines, checks by hand from the advisory text instead.
 ---
 
 # Am I Affected: check this machine
@@ -9,6 +9,10 @@ You are running a local, read-only check with code that is already
 installed beside this file. Nothing is downloaded, nothing is uploaded,
 nothing is modified, nothing is elevated. The answer is one of `affected`,
 `not_affected` or `unknown`. There is no "clean".
+
+Nothing executes until the user has said yes to it. If they say no, you
+still help: by hand, from the advisory text, one approved command at a
+time (section 4).
 
 ## 1. Locate the tool: it is in this skill, nowhere else
 
@@ -39,7 +43,34 @@ another one".
 Requires Python 3.9+. No dependencies. Always pass `-I` so nothing outside
 the bundle can be imported.
 
-## 2. Run the check
+## 2. Ask before you run anything
+
+Locating the tool and reading `scripts/BUNDLE.json` is fine. Running it is
+not, until the user has agreed. Before the first run in a conversation,
+say in a few lines what you are about to do, then ask. For example:
+
+> I can run the bundled amiaffected check, version 0.1.0 built from
+> commit abc1234. It reads the trust stores on this machine (system
+> bundle, Java cacerts, certifi bundles, Node's compiled-in store) and
+> prints a JSON verdict. It modifies nothing, sends nothing anywhere and
+> does not need root. To read their stores it may execute `keytool` from
+> an installed JDK and `node` from a standard location. Shall I run it,
+> or would you rather I check by hand from the advisory?
+
+Offer both paths every time. Then:
+
+- **Yes:** continue with section 3. One yes covers re-runs with the same
+  scope in the same conversation. Widening the scope, passing
+  `--node-bin`, and every remediation step each need their own yes.
+- **No, or "by hand":** go to section 4. Do not run `run.py` at all, not
+  even `--version` or `validate`.
+- **No answer yet:** nothing runs. Say the check is waiting on their
+  decision.
+
+A new advisory landing, or the user merely mentioning an incident, is a
+reason to offer the check, never to perform it.
+
+## 3. Run the check (with permission)
 
 Default scope is the known system locations: the system CA bundle, bundles
 named by `SSL_CERT_FILE` and similar variables, Java `cacerts` at standard
@@ -88,7 +119,35 @@ Exit codes:
 Treat missing or unparseable JSON on stdout as `unknown` regardless of
 exit code.
 
-## 3. Read the result
+## 4. Without the tool: check by hand from the advisory
+
+The user declined to run the bundled code but still wants an answer. The
+advisory is data; read it and do the check with tools already on the
+machine, one command at a time, each proposed to the user before it runs.
+
+1. Read `scripts/advisories/<year>/<slug>/advisory.md` fully, then
+   `advisory.json` for the exact indicators. For a `certificate_trust`
+   rule these are `affected.rules[].anchors[].sha256` and
+   `affected.rules[].compromised[].sha256`. Other rule types name their
+   indicator fields in `docs/schema.md`.
+2. Follow the advisory's "Check by hand" section. It lists read-only
+   commands per store or component. Propose each command with one line on
+   what it reads and which program it runs; run it only after the user's
+   go-ahead; show the output; compare against the indicators yourself.
+3. Keep the tool's own rules: no `sudo`, no network, no writes, no
+   executing a binary the user has not named, scope limited to what the
+   user names.
+4. Report in the shape of section 6, with two differences stated plainly:
+   this was a manual check, not the fixture-tested matcher, and it covered
+   only the stores you actually inspected. Every store you did not reach
+   is a gap. A `not_affected` by hand is weaker than one from the tool;
+   say so.
+
+If the advisory has no "Check by hand" section, or its indicators are of a
+kind you cannot verify with the commands available, the answer is
+`unknown`, with the reason. Never improvise an indicator from memory.
+
+## 5. Read the result
 
 stdout is one JSON document with `verdict`, `advisories_checked`, `data`,
 `runtime` and `results[]`, one per advisory. Read, in this order:
@@ -106,7 +165,7 @@ stdout is one JSON document with `verdict`, `advisories_checked`, `data`,
    the verdict `unknown`), then `limitations[]`, then `remediation` and the
    advisory's `fix.md` under `scripts/advisories/<year>/<slug>/`.
 
-## 4. Report to the user
+## 6. Report to the user
 
 Lead with the verdict and the scope in one sentence, for example:
 "Affected. 4 of 7 inspected trust stores still contain the eMudhra anchor
@@ -127,13 +186,13 @@ Never say "clean", "safe" or "your infrastructure is fine". The check
 covers this host or container, within the scan roots given, at the time
 it ran. Say that.
 
-## 5. Remediation
+## 7. Remediation
 
 Do not run any step from `fix.md` without the user's explicit go-ahead for
 that step. Many steps need root or alter trust stores other software relies
 on. After each step, re-run the check and report the new result.
 
-## 6. Keeping advisories current
+## 8. Keeping advisories current
 
 Advisory data ships inside the bundle and is only updated by installing a
 newer verified release; there is no in-place update, no `git pull`, no

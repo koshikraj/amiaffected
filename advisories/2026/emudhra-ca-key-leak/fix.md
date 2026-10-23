@@ -1,8 +1,8 @@
 # Fix: remove trust in the eMudhra anchors
 
 Order: most exposed first. Every step is reversible; the rollback is to
-re-add the certificate you removed. Re-run `python3 -m amiaffected check`
-after each step.
+re-add the certificate you removed. Re-run the check after each step, with
+the bundled tool or the by-hand commands in `advisory.md`.
 
 ## 1. System bundle
 

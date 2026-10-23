@@ -51,6 +51,13 @@ verified archive replacing the old one.
 - The collector never imports the packages it inspects. certifi bundles are
   located as files on disk.
 
+Nothing runs without the user's consent. The skill tells the agent what the
+tool will read and which external programs it may execute, then asks. A
+user who declines still gets an answer: the agent reads the advisory and
+follows its "Check by hand" section with tools already on the machine, one
+approved read-only command at a time, and reports the result as a manual
+check with the stores it did not reach listed as gaps.
+
 ## What it does not do
 
 - No network. The advisory data is in the bundle. The result says
