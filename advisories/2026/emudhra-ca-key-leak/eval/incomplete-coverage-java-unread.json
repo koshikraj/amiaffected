@@ -1,0 +1,12 @@
+{
+  "id": "incomplete-coverage-java-unread",
+  "kind": "incomplete_coverage",
+  "advisory_revision": 2,
+  "coverage": "java-cacerts",
+  "input": {"captured_output": "$ ls /usr/lib/jvm\njava-17-openjdk-amd64\n$ /usr/lib/jvm/java-17-openjdk-amd64/bin/keytool -list -v -cacerts -storepass changeit\nkeytool error: java.io.IOException: Keystore was tampered with, or password was incorrect"},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["java-17-openjdk-amd64", "gap", "password", "unknown"]
+  },
+  "note": "A JDK exists, so the store is in scope, and keytool could not open it. Every other store read negative. The verdict is unknown; the report names the JDK and the reason."
+}

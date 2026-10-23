@@ -73,9 +73,8 @@ CHECK_DENY = [
     (r"(^|[\s;&|(])(env|setenv)\s", "env"),
     (r"(^|[\s;&|(])[A-Za-z_][A-Za-z0-9_]*=\S*\s+[A-Za-z_./]", "env-assignment prefix"),
     (r"(^|[\s;&|(])(git|docker|podman|kubectl|systemctl|service|crontab|reboot|shutdown|kill|pkill)\s+(clone|pull|push|fetch|run|exec|start|stop|restart|enable|disable|apply|delete|-e|-l)\b", "state change"),
-    (r"(^|[\s;&|(])(python[0-9.]*|perl|ruby|node|php)\s+(-[a-zA-Z]+\s+)*(-c|-e|-p|-r)\s", "inline interpreter code"),
     (r"(^|[\s;&|(])(python[0-9.]*|perl|ruby|node|php)\s+-\s*<<", "heredoc into an interpreter"),
-    (r"(^|[\s;&|(])powershell(\.exe)?\s+.*-(enc|encodedcommand|c|command)\b", "inline PowerShell code"),
+    (r"(^|[\s;&|(])powershell(\.exe)?\s+.*-(enc|encodedcommand)\b", "encoded PowerShell code"),
     (r"Invoke-WebRequest|Invoke-RestMethod|Start-BitsTransfer|iwr\s|irm\s|Net\.WebClient", "PowerShell network"),
     (r"Set-ItemProperty|Remove-Item|Import-Certificate|Export-Certificate|Set-Content|Out-File|Add-Content", "PowerShell write"),
 ]
@@ -88,11 +87,24 @@ FIX_DENY = [
     (r"[`$(]\s*" + NETWORK_TOOLS + r"\b", "command substitution around a network tool"),
     (r"(curl|wget)\b[^|\n]*\|\s*(sudo\s+)?(sh|bash|python[0-9.]*|perl|node|ruby|php)\b", "fetch piped into an interpreter"),
     (r"(^|[\s;&|(])(python[0-9.]*|perl|ruby|node|php)\s+-\s*<<", "heredoc into an interpreter"),
-    (r"(^|[\s;&|(])(python[0-9.]*|perl|ruby|node|php)\s+(-[a-zA-Z]+\s+)*(-c|-e|-p|-r)\s", "inline interpreter code"),
     (r"Invoke-WebRequest|Invoke-RestMethod|Start-BitsTransfer|iwr\s|irm\s|Net\.WebClient|Invoke-Expression|\biex\b", "PowerShell fetch or eval"),
     (r"-ExecutionPolicy\s+Bypass", "execution-policy bypass"),
 ]
 
+# Inline literal code (node -p, python3 -c) is allowed in every mode when it
+# is a quoted literal that only reads. Anything on this list fails the block.
+INLINE_CODE_RE = re.compile(r"(^|[\s;&|(])(python[0-9.]*|perl|ruby|node|php)\s+(-[a-zA-Z]+\s+)*(-c|-e|-p|-r)\s+(.*)$")
+INLINE_DENY = [
+    "child_process", "subprocess", "os.system", "os.popen", "os.exec", "os.spawn", "os.remove", "os.unlink",
+    "os.rename", "os.makedirs", "os.mkdir", "os.chmod", "os.chown", "os.environ[", "putenv", "shutil",
+    "exec(", "eval(", "spawn", "fork", "system(", "popen", "unlink", "rmdir", "rename(", "mkdir",
+    "require(\"http", "require('http", "require(\"net", "require('net", "require(\"dgram", "require('dgram",
+    "require(\"fs", "require('fs", "require(\"vm", "require('vm", "import(", "process.env", "process.binding",
+    "fetch(", "urllib", "http.client", "socket", "requests", "open(", "write", "unlink", "ctypes", "importlib",
+    "__import__", "compile(", "input(", "`",
+]
+
+SUBST_RE = re.compile(r"\$\([^()]*(?:\([^()]*\)[^()]*)*\)")
 URL_HOST_RE = re.compile(r"https?://([A-Za-z0-9.-]+)")
 CONNECT_HOST_RE = re.compile(r"-(connect|servername)\s+([A-Za-z0-9.-]+)")
 
@@ -407,10 +419,25 @@ def lint_block(where: str, mode: str, body: str, live_hosts: list[str], rep: Rep
         if line.strip().startswith("#") or not line.strip():
             continue
         probe = strip_quotes(line)
+        m = INLINE_CODE_RE.search(line)
+        if m:
+            code = m.group(5).strip()
+            if not (code[:1] in ("'", '"') and code.count(code[0]) >= 2):
+                rep.error(where, f"inline interpreter code must be a quoted literal: {line.strip()[:100]}")
+            else:
+                lowered = code.lower()
+                for bad in INLINE_DENY:
+                    if bad.lower() in lowered:
+                        rep.error(where, f"inline interpreter code uses {bad!r}: {line.strip()[:100]}")
+                        break
         for pattern, reason in deny:
             if mode == "live" and reason in LIVE_RELAX:
                 continue
-            if re.search(pattern, probe):
+            # `x=$(cmd ...)` is an assignment, not an env prefix: drop the
+            # substitution for that one pattern only, so `$(curl ...)` still
+            # trips the network-tool pattern.
+            target = SUBST_RE.sub("", probe) if reason == "env-assignment prefix" else probe
+            if re.search(pattern, target):
                 rep.error(where, f"{mode} block uses {reason}: {line.strip()[:100]}")
         if mode == "live":
             hosts = {h.lower() for h in URL_HOST_RE.findall(probe)}
@@ -475,6 +502,9 @@ def lint_markdown(folder: Path, data: dict | None, rep: Report) -> None:
                     rep.error(w, "PowerShell fix blocks must be tagged windows")
             else:
                 rep.error(w, f"unknown block mode {mode!r}")
+                continue
+            if lang in ("powershell", "pwsh", "cmd") and mode == "live":
+                rep.error(w, "live blocks are sh only")
                 continue
             lint_block(w, mode, body, live_hosts, rep)
 

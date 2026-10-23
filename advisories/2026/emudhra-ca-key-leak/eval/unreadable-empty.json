@@ -1,0 +1,12 @@
+{
+  "id": "unreadable-empty",
+  "kind": "unreadable",
+  "advisory_revision": 2,
+  "coverage": "system-bundle",
+  "input": {"file": "empty.pem"},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["parsed 0 certificates", "gap", "unknown"]
+  },
+  "note": "Zero certificates parsed. An empty store and an unreadable one look the same; this is a gap, never a negative. The old by-hand text said a count of 0 is not affected; that is the bug."
+}

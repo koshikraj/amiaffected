@@ -133,7 +133,7 @@ linter applies the mode's rules:
 
 | Info string | Allowed in | Rules |
 |---|---|---|
-| `sh check` | `advisory.md` | read-only, no sudo/doas/su, no network, no writes or redirects (except to `/dev/null`), no pipes into an interpreter or shell, no env-assignment prefixes or `export`, no `$()` or backticks around a network tool, no package-manager or trust-store mutation verbs |
+| `sh check` or `powershell check` | `advisory.md` | read-only, no sudo/doas/su, no network, no writes or redirects (except to `/dev/null`), no pipes into an interpreter or shell, no env-assignment prefixes or `export`, no `$()` or backticks around a network tool, no package-manager or trust-store mutation verbs |
 | `sh live` | `advisory.md` | same as `check`, except `curl`, `wget -q -O /dev/null` and `openssl s_client` may reach the hosts in `live_check.hosts` and nothing else |
 | `sh fix <platform>` or `powershell fix windows` | `fix.md` | may write and use sudo; no pipes into an interpreter or shell, no fetch that is executed (`curl ... \| sh`, `$(curl ...)`). `<platform>` is required and must be one of `any linux debian ubuntu alpine fedora rhel suse arch nixos macos windows freebsd netbsd android` |
 | `text` | anywhere | never linted: output excerpts, file contents |
@@ -172,3 +172,8 @@ committed. Fields per entry: `id`, `slug`, `path`, `title`, `severity`,
 `indicator_types`, `live_check` (boolean). Top level: `schema_version`,
 `updated` (the newest `updated` across advisories), `count`, `advisories`.
 CI fails if the committed file differs from a regeneration.
+
+Inline literal code (`node -p '...'`, `python3 -c '...'`) is allowed in
+check and fix blocks when it is a single quoted literal; the linter rejects
+literals that spawn, write, reach the network or touch the environment.
+Heredocs into an interpreter are rejected everywhere.

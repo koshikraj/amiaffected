@@ -1,0 +1,12 @@
+{
+  "id": "unreadable-malformed",
+  "kind": "unreadable",
+  "advisory_revision": 2,
+  "coverage": "system-bundle",
+  "input": {"file": "malformed.pem"},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["parsed 0 certificates", "1 BEGIN CERTIFICATE", "gap", "unknown"]
+  },
+  "note": "One BEGIN marker, zero certificates parsed: the counts disagree, so the bundle was not fully read."
+}

@@ -1,0 +1,12 @@
+{
+  "id": "unreadable-missing-path",
+  "kind": "unreadable",
+  "advisory_revision": 2,
+  "coverage": "system-bundle",
+  "input": {"captured_output": "bash: /etc/pki/tls/certs/ca-bundle.crt: No such file or directory\nparsed 0 certificates, 0 matched"},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["No such file", "gap", "unknown"]
+  },
+  "note": "A location from the coverage list that does not exist on this host. The agent should try the other listed locations for the platform before marking the store a gap; if none exists, the store is a gap."
+}

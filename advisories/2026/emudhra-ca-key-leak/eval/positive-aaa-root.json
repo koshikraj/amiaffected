@@ -1,0 +1,12 @@
+{
+  "id": "positive-aaa-root",
+  "kind": "positive",
+  "advisory_revision": 2,
+  "coverage": "system-bundle",
+  "input": {"file": "affected-aaa-root.pem"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4", "AAA Certificate Services", "parsed 2 certificates, 1 matched", "affected"]
+  },
+  "note": "A two-certificate bundle containing the Sectigo AAA root. The report must name the root, quote the MATCH line and say the store would validate the cross-signed chains."
+}

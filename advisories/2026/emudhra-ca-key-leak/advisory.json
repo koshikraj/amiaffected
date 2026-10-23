@@ -1,0 +1,436 @@
+{
+  "schema_version": "1.0",
+  "rules_version": 1,
+  "id": "AIA-2026-0001",
+  "slug": "emudhra-ca-key-leak",
+  "title": "eMudhra intermediate CA private keys recoverable from the certificates",
+  "summary": "Eight eMudhra (emSign) intermediate CAs, sixteen certificates including Sectigo AAA cross-signs, were issued with keys that anyone can recover from the certificates themselves. Whoever holds a key can mint TLS or code-signing certificates for any name that chains to those intermediates. Browsers block them through revocation lists, but most non-browser clients (curl, package managers, language runtimes, Java, Node, Electron apps) check neither revocation nor Certificate Transparency, so any trust store that still carries one of the four anchoring roots, and has no distrust record for the intermediates, accepts forged certificates.",
+  "aliases": ["emSign intermediate compromise", "we-have-a-problem.com eMudhra"],
+  "revision": 2,
+  "published": "2026-10-23",
+  "updated": "2026-10-23",
+  "review_by": "2026-11-23",
+  "publication_state": "active",
+  "severity": "critical",
+  "sources": [
+    {
+      "id": "wahp",
+      "title": "eMudhra Intermediate CA Compromise (Dennis Jackson and contributors)",
+      "url": "https://emudhra.we-have-a-problem.com/",
+      "role": "reference_implementation",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "wahp-repo",
+      "title": "galadran/we-have-a-problem.com: impacted-intermediates.json, roots.json, proof.zip, chains.zip",
+      "url": "https://github.com/galadran/we-have-a-problem.com",
+      "role": "artifacts",
+      "retrieved": "2026-10-23"
+    }
+  ],
+  "credits": [
+    {
+      "name": "Dennis Jackson",
+      "url": "https://github.com/galadran",
+      "for": "the incident write-up, signed proofs of key recovery, captured chains, test hosts, the patch-status table and the artifact JSON every fingerprint here was cross-checked against"
+    }
+  ],
+  "products": [
+    {"name": "System CA bundles", "ecosystem": "os-package", "scope": "ca-certificates on Debian, Ubuntu, Alpine, Fedora, RHEL, Arch, SUSE, Gentoo and derivatives; /etc/ssl/cert.pem on macOS; the FreeBSD, NetBSD and OpenBSD root sets"},
+    {"name": "Python certifi", "ecosystem": "pypi", "scope": "every copy: site-packages, each virtualenv, uv and pip caches, conda, pixi, embedded copies in applications"},
+    {"name": "Java cacerts", "ecosystem": "runtime", "scope": "one keystore per JDK or JRE, plus the blocked.certs distrust list beside it"},
+    {"name": "Node.js", "ecosystem": "runtime", "scope": "compiled-in root store; also Bun, Deno, Electron and the applications built on them"},
+    {"name": "Other bundled stores", "ecosystem": "application", "scope": "curl's CA bundle, NSS, Go's fallback roots, rustls-webpki and webpki-roots, Perl Mozilla::CA, Composer ca-bundle, Erlang certifi and castore, Claude Code, VS Code, Docker Desktop, Git for Windows, pip, uv, conda, rustup, mise, pixi, ArgoCD, Obsidian"},
+    {"name": "Windows and macOS system stores", "ecosystem": "os-package", "scope": "LocalMachine and CurrentUser Root, AuthRoot and Disallowed stores on Windows; SystemRootCertificates and admin trust settings on macOS. Both platforms distribute blocks separately from the root list, so present and trusted differ"}
+  ],
+  "applicability": {
+    "summary": "Any machine, container image or runtime that carries a CA trust store: Linux, macOS, Windows or BSD, plus every bundled copy in Python, Java, Node, Go, Rust and desktop applications",
+    "conditions": [
+      "The host or an application on it makes TLS connections or verifies code signatures using a trust store it carries itself.",
+      "That store still contains one of the four anchor roots and has no distrust record for the sixteen compromised certificates.",
+      "The client using that store does not check revocation (OCSP, CRL, OneCRL, CRLSets, CRLite) and does not enforce Certificate Transparency, which is true of almost every non-browser client."
+    ]
+  },
+  "indicators": [
+    {
+      "id": "root-emsign-tls-g3",
+      "type": "certificate",
+      "name": "emSign Root TLS CA - G3",
+      "operator": "eMudhra",
+      "role": "anchor",
+      "sha256": ["7DD78D5F4F13459A83DFF9ABBBA62EDBAF6F2D102BF257FD712F4D9F2746ED8D"],
+      "ski": "E13AAB217CF1E34D54AED472B7FD8B5942209054",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "Direct issuer of the six compromised TLS intermediates. Present in a store without a distrust record for the intermediates means that store validates forged TLS certificates. Included by Microsoft; not in the Mozilla, Apple or Chrome root programs.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "root-emsign-cs-g3",
+      "type": "certificate",
+      "name": "emSign Root CS CA - G3",
+      "operator": "eMudhra",
+      "role": "anchor",
+      "sha256": ["F2EDAAFF3D9B701FB4D14C9F285F8C0BAD90FC3BCC1FA07D47F4718EDABA34A5"],
+      "ski": "687403F885CA8D5450571D16E0C8DE450DABCD2D",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "Direct issuer of the two compromised code-signing intermediates. Present in a store used for signature verification means that store accepts forged code signatures. Included by Microsoft only.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "root-sectigo-aaa",
+      "type": "certificate",
+      "name": "AAA Certificate Services",
+      "operator": "Sectigo (Comodo)",
+      "role": "anchor",
+      "sha256": ["D7A7A0FB5D7E2731D771E9484EBCDEF71D5F0C3E0A2948782BC83EE0EA699EF4"],
+      "ski": "A0110A233E96F107ECE2AF29EF82A57FD030A4B4",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "Cross-signs all eight compromised intermediates. Present in a store without a distrust record means the store validates forged certificates via the cross-signed path. This root is in every major root program and many legitimate sites chain to it, so removing it has side effects.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "root-emsign-ecc-g3",
+      "type": "certificate",
+      "name": "emSign ECC Root CA - G3",
+      "operator": "eMudhra",
+      "role": "anchor",
+      "sha256": ["86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B"],
+      "ski": "7C5D028413D4CC8A9B81CE171C2E291E9C486342",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "Cross-signs emSign Root TLS CA - G3, so chains anchored here also validate. Present in a store without a distrust record means the store validates forged TLS certificates. In every major root program; this is the root most Linux bundles and certifi carried.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "ica-dv-g3b",
+      "type": "certificate",
+      "name": "EM DV TLS CA - G3B",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["42C4ACCD12C4F59597925E1A08A7A90102608543809308D50EC427E118BA1493", "45A883F349AEDFD5F3A649B5498FFB121712BA8B448F3F2A91DBC5A766FCDDBE"],
+      "ski": "E21E2FE71C19390E554B62C120245735248A2514",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "A compromised intermediate (eMudhra-issued and Sectigo cross-signed certificates). Present as a trusted certificate means the store trusts it directly; present in a distrust or blocked list means the store has the fix for that certificate.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "ica-ov-g3b",
+      "type": "certificate",
+      "name": "EM OV TLS CA - G3B",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["5F1DED4DD590AF74631290CF073B122A2AAC6A1FA479778A0BD43579BD832699", "98B896625C0C230ADEEC3EB2CF6AAD5001ECF9156A68644E82374CE5833BC25B"],
+      "ski": "9BD86551AFE7E72C37AD08EE6919D9BF3784AE0A",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "A compromised intermediate. Present as trusted means direct trust; present in a distrust list means the fix is in place for that certificate.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "ica-ev-g3b",
+      "type": "certificate",
+      "name": "EM EV TLS CA - G3B",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["579480AEA166290BD3C643589E795FC0D0E54E86505D180F1DFF99EFD3199512", "E7568FE6E12331F4FD7DE61DA4C7559D0F8EB192A218D4741A3BA75184333838"],
+      "ski": "3EDC20D9894698877B873FD88147B25C15D84706",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "A compromised intermediate. Present as trusted means direct trust; present in a distrust list means the fix is in place for that certificate.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "ica-dv-g3c",
+      "type": "certificate",
+      "name": "EM DV TLS CA - G3C",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["0164D7CEAE5BB909C272AF151FF44B1177AE9B47D9424B94F1D9558C30934D19", "62B7F9868263F72F6911FC78CEAF72C1979158B7368BF648683BB2AA39B02E72"],
+      "ski": "AE7E105C3C2996C1A847270559F1E03DD4E50AF3",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "A compromised intermediate. Present as trusted means direct trust; present in a distrust list means the fix is in place for that certificate.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "ica-ov-g3c",
+      "type": "certificate",
+      "name": "EM OV TLS CA - G3C",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["7485B51C0ED192878FA1D2F948FB529AE1842CC5086C4B67F7BE5B2039DE9489", "CB6E15165AC802E9B3F993F16C25D41F4E81C21EBDE71AE1B012AC00BF9C7C3F"],
+      "ski": "34EAEA0CEBC90ADAF9D0C5E2ED9B78C9879E1B6C",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "A compromised intermediate. Present as trusted means direct trust; present in a distrust list means the fix is in place for that certificate.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "ica-ev-g3c",
+      "type": "certificate",
+      "name": "EM EV TLS CA - G3C",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["432EC25F0D28DE9006D97BF752F17BBB2CD41F669933FCB072D9A1148D0261F3", "FD9D5C2DBBD4995AB69B8D50C439D9527B00529199C2FD01B2174EB58F07021F"],
+      "ski": "A6255E80A94DB7F3967C1BC791DF92BCEE4BEB5F",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "A compromised intermediate. Present as trusted means direct trust; present in a distrust list means the fix is in place for that certificate.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "ica-ov-cs-g3b",
+      "type": "certificate",
+      "name": "EM OV CS CA - G3B",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["9E39DE2881273ACC225A149C72BA3E0F51424963669AB633EE1DC7DF5DB067B4", "A496E23AC0CAB8155FC9B117B97EAE368EFCBB9041AEC8804D5A308D2D01C2D8"],
+      "ski": "79FAE8ECCFDB0D758DA458D69FB6EDDC7C49DEE6",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "A compromised code-signing intermediate. Present as trusted means the store accepts forged code signatures through it; present in a distrust list means the fix is in place for that certificate.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "ica-ov-cs-g3c",
+      "type": "certificate",
+      "name": "EM OV CS CA - G3C",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["4B2460A466F95FD40113BCDCCA2CEB29B3B093921DE45474DA7DF48874C630B1", "84112972B8E59D14560AE7E7119654474AAD119990CF3722BFC1E3B91615E1FD"],
+      "ski": "EE6F73298D6FBFA7B31BC39534F61556447866B7",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "A compromised code-signing intermediate. Present as trusted means the store accepts forged code signatures through it; present in a distrust list means the fix is in place for that certificate.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "xsign-emsign-tls-g3-by-ecc-g3",
+      "type": "certificate",
+      "name": "emSign Root TLS CA - G3 (cross-signed by emSign ECC Root CA - G3)",
+      "operator": "eMudhra",
+      "role": "compromised",
+      "sha256": ["3094025792039A68AF6E553686410BDAB7C0D4A36B9084CBA64202E35D6EBBDD"],
+      "ski": "E13AAB217CF1E34D54AED472B7FD8B5942209054",
+      "comparison": "sha256 of the DER certificate, case-insensitive; SKI is a secondary key for stores that expose it",
+      "meaning": "The cross-sign that lets chains to emSign Root TLS CA - G3 validate under emSign ECC Root CA - G3. Its key is not itself leaked; it is listed because a store that pins or blocks by this certificate must include it. Present in a distrust list means the cross-signed path is blocked.",
+      "source": "wahp-repo"
+    },
+    {
+      "id": "floor-ca-certificates",
+      "type": "version_floor",
+      "product": "ca-certificates (system bundle package)",
+      "ecosystem": "os-package",
+      "version_scheme": "opaque",
+      "affected": [
+        {"introduced": "0", "fixed": "20250419~deb12u2 (Debian 12)"},
+        {"introduced": "0", "fixed": "20250419+deb13u1 (Debian 13)"},
+        {"introduced": "0", "fixed": "20260816+nmu1 (Debian unstable; Devuan follows Debian)"},
+        {"introduced": "0", "fixed": "20260816ubuntu0.22.04.1 (Ubuntu 22.04)"},
+        {"introduced": "0", "fixed": "20260816ubuntu0.24.04.1 (Ubuntu 24.04)"},
+        {"introduced": "0", "fixed": "20260816ubuntu0.26.04.1 (Ubuntu 26.04)"},
+        {"introduced": "0", "fixed": "20260816ubuntu0.26.10.1 (Ubuntu 26.10)"},
+        {"introduced": "0", "fixed": "20261020-r0 (Alpine)"},
+        {"introduced": "0", "fixed": "20260909-r3 (Chainguard)"},
+        {"introduced": "0", "fixed": "3.131.1-1 (Arch ca-certificates-mozilla)"},
+        {"introduced": "0", "fixed": "2026.2.92_v9.0.319 (Fedora)"},
+        {"introduced": "0", "fixed": "2026.2.92_v9.0.319-81.3.el8_10 (RHEL 8)"},
+        {"introduced": "0", "fixed": "2026.2.92_v9.0.319-90.3.el9_8 (RHEL 9)"},
+        {"introduced": "0", "fixed": "2026.2.92_v9.0.319-100.3.el10_2 (RHEL 10)"},
+        {"introduced": "0", "fixed": "2025.2.80_v9.0.304-80.2.0.1.el8_10 (Oracle Linux 8)"},
+        {"introduced": "0", "fixed": "2025.2.80_v9.0.305-91.0.1.el9 (Oracle Linux 9)"},
+        {"introduced": "0", "fixed": "2025.2.80_v9.0.305-102.0.1.el10_2 (Oracle Linux 10)"},
+        {"introduced": "0", "fixed": "20260816.3.125 (Gentoo)"},
+        {"introduced": "0", "fixed": "2026-09-25_1 (Homebrew ca-certificates)"},
+        {"introduced": "0", "fixed": "7608a99 (GNU Guix commit)"},
+        {"introduced": "0", "fixed": "25.08.19 and 26.08.3 (Freedesktop SDK)"},
+        {"introduced": "0", "fixed": "r151054by, r151056ay, r151058y (OmniOS web/ca-bundle)"},
+        {"introduced": "0", "fixed": "1.131.1 (FreeBSD ca_root_nss)"},
+        {"introduced": "0", "fixed": "15.1-RELEASE-p6, 14.5-RELEASE-p3, 14.4-RELEASE-p12 (FreeBSD caroot)"},
+        {"introduced": "0", "fixed": "OpenBSD current, 8.0, 7.9"}
+      ],
+      "fixed_in": ["20250419~deb12u2", "20250419+deb13u1", "20260816+nmu1", "20260816ubuntu0.22.04.1", "20260816ubuntu0.24.04.1", "20260816ubuntu0.26.04.1", "20260816ubuntu0.26.10.1", "20261020-r0", "20260909-r3", "3.131.1-1", "2026.2.92_v9.0.319", "2026.2.92_v9.0.319-81.3.el8_10", "2026.2.92_v9.0.319-90.3.el9_8", "2026.2.92_v9.0.319-100.3.el10_2", "2025.2.80_v9.0.304-80.2.0.1.el8_10", "2025.2.80_v9.0.305-91.0.1.el9", "2025.2.80_v9.0.305-102.0.1.el10_2", "20260816.3.125", "2026-09-25_1", "7608a99", "25.08.19", "26.08.3", "r151054by", "r151056ay", "r151058y", "1.131.1", "15.1-RELEASE-p6", "14.5-RELEASE-p3", "14.4-RELEASE-p12"],
+      "backport_note": "Each distribution keys the fix on its own package version; compare with the distribution's comparator (dpkg --compare-versions, rpm, apk) and never with the Mozilla NSS version the package was derived from. RHEL 7 and Bottlerocket had no fixed version on the source's table as of as_of.",
+      "as_of": "2026-10-23",
+      "meaning": "Package version at or above the floor for that distribution establishes that the shipped bundle no longer carries the anchor roots. It says nothing about a bundle edited locally, a bundle in a container image, or any other store on the host; read the bundle itself where you can.",
+      "source": "wahp"
+    },
+    {
+      "id": "floor-bundle-libraries",
+      "type": "version_floor",
+      "product": "Root store bundles and libraries (certifi, NSS, curl CA bundle, rustls-webpki, webpki-roots, Mozilla::CA, Composer ca-bundle, Erlang certifi, Elixir castore, CFSSL)",
+      "ecosystem": "pypi",
+      "version_scheme": "opaque",
+      "affected": [
+        {"introduced": "0", "fixed": "2026.10.19 (Python certifi)"},
+        {"introduced": "0", "fixed": "3.131.1 (NSS)"},
+        {"introduced": "0", "fixed": "2026-10-20 (curl CA bundle, cacert.pem date)"},
+        {"introduced": "0", "fixed": "0.103.16 (Rust rustls-webpki)"},
+        {"introduced": "0", "fixed": "1.0.10 (Rust webpki-roots and webpki-root-certs)"},
+        {"introduced": "0", "fixed": "20261020 (Perl Mozilla::CA)"},
+        {"introduced": "0", "fixed": "1.4.16 and 1.6.0 (Composer ca-bundle)"},
+        {"introduced": "0", "fixed": "2.18.0 (Erlang certifi)"},
+        {"introduced": "0", "fixed": "1.0.22 (Elixir castore)"},
+        {"introduced": "0", "fixed": "2026.10.1 (Cloudflare CFSSL trust store)"}
+      ],
+      "fixed_in": ["2026.10.19", "3.131.1", "2026-10-20", "0.103.16", "1.0.10", "20261020", "1.4.16", "1.6.0", "2.18.0", "1.0.22", "2026.10.1"],
+      "backport_note": "certifi on Debian and Ubuntu is patched to return the system bundle path, so its own cacert.pem file may be present and unused; report which file the interpreter actually resolves. Rust and Go roots are compiled into each binary, so the floor applies per binary, not per host.",
+      "as_of": "2026-10-23",
+      "meaning": "Library version at or above the floor establishes that the library's shipped bundle no longer carries the anchor roots. For compiled-in stores (Rust, Go, Electron) this is the only evidence available and the report must say so.",
+      "source": "wahp"
+    },
+    {
+      "id": "floor-runtimes",
+      "type": "version_floor",
+      "product": "Language runtimes with a compiled-in or bundled store (Node.js, Bun, Deno, Electron, Go, Java, Python)",
+      "ecosystem": "runtime",
+      "version_scheme": "opaque",
+      "affected": [
+        {"introduced": "0", "fixed": "26.12.1, 24.22.1, 22.23.4 (Node.js per major)"},
+        {"introduced": "0", "fixed": "1.4.4 (Bun)"},
+        {"introduced": "0", "fixed": "2.9.8 (Deno)"},
+        {"introduced": "0", "fixed": "44.9.1, 43.8.1, 42.11.16 (Electron per major)"},
+        {"introduced": "0", "fixed": "1.27.3, 1.26.10 (Go, fallback roots)"},
+        {"introduced": "0", "fixed": "27.0.1.0.2, 25.0.5.0.2, 21.0.13.0.2, 17.0.21.0.2, 11.0.33.0.2, 8u511 b32 (Java, OpenJDK and Oracle JDK update releases)"},
+        {"introduced": "0", "fixed": "3.15.1, 3.14.9, 3.13.17 (Python; applies to the bundled certifi in python.org and Windows Store builds)"}
+      ],
+      "fixed_in": ["26.12.1", "24.22.1", "22.23.4", "1.4.4", "2.9.8", "44.9.1", "43.8.1", "42.11.16", "1.27.3", "1.26.10", "27.0.1.0.2", "25.0.5.0.2", "21.0.13.0.2", "17.0.21.0.2", "11.0.33.0.2", "8u511", "3.15.1", "3.14.9", "3.13.17"],
+      "backport_note": "Distribution JDK packages (Debian openjdk-21-jre-headless, RHEL java-21-openjdk) carry their own version numbers and may regenerate cacerts from the system bundle at install time; read the keystore rather than trusting the version. Node on Linux uses its compiled-in store unless NODE_OPTIONS=--use-openssl-ca or NODE_EXTRA_CA_CERTS changes that.",
+      "as_of": "2026-10-23",
+      "meaning": "Runtime version at or above the floor for its major establishes that the runtime's own store no longer carries the anchor roots. A runtime below the floor whose store can be read (Java cacerts, Node rootCertificates) should be read; the store finding wins over the version.",
+      "source": "wahp"
+    },
+    {
+      "id": "floor-applications",
+      "type": "version_floor",
+      "product": "Applications and tools that ship their own store (ArgoCD, Claude Code, Conda, Docker Desktop, Git for Windows, mise, Obsidian, pip, pixi, pypi-publish action, Rustup, uv, Visual Studio Code)",
+      "ecosystem": "application",
+      "version_scheme": "opaque",
+      "affected": [
+        {"introduced": "0", "fixed": "3.3.18, 3.4.12, 3.5.6, 3.6.0-rc4 (ArgoCD)"},
+        {"introduced": "0", "fixed": "2.1.303 (Claude Code)"},
+        {"introduced": "0", "fixed": "26.9.4 (Conda)"},
+        {"introduced": "0", "fixed": "4.96.2 (Docker Desktop)"},
+        {"introduced": "0", "fixed": "2.56.0.3 (Git for Windows)"},
+        {"introduced": "0", "fixed": "2026.10.17 (mise)"},
+        {"introduced": "0", "fixed": "1.14.5 (Obsidian)"},
+        {"introduced": "0", "fixed": "26.2.2 (pip, vendored certifi)"},
+        {"introduced": "0", "fixed": "0.82.1 (pixi)"},
+        {"introduced": "0", "fixed": "1.14.3 (pypi-publish GitHub Action)"},
+        {"introduced": "0", "fixed": "1.29.2 (Rustup)"},
+        {"introduced": "0", "fixed": "0.13.5 (uv)"},
+        {"introduced": "0", "fixed": "1.143.1 (Visual Studio Code)"}
+      ],
+      "fixed_in": ["3.3.18", "3.4.12", "3.5.6", "3.6.0-rc4", "2.1.303", "26.9.4", "4.96.2", "2.56.0.3", "2026.10.17", "1.14.5", "26.2.2", "0.82.1", "1.14.3", "1.29.2", "0.13.5", "1.143.1"],
+      "backport_note": "Godot had no fixed version on the source's table as of as_of. pip's vendored certifi is separate from the certifi package in the same environment; both need checking.",
+      "as_of": "2026-10-23",
+      "meaning": "Application version at or above the floor establishes that the application's own bundled store no longer carries the anchor roots. Most of these stores cannot be read directly, so the version is the only evidence and the report says so.",
+      "source": "wahp"
+    }
+  ],
+  "coverage": [
+    {
+      "id": "system-bundle",
+      "store": "System CA bundle",
+      "indicators": ["root-emsign-tls-g3", "root-emsign-cs-g3", "root-sectigo-aaa", "root-emsign-ecc-g3", "ica-dv-g3b", "ica-ov-g3b", "ica-ev-g3b", "ica-dv-g3c", "ica-ov-g3c", "ica-ev-g3c", "ica-ov-cs-g3b", "ica-ov-cs-g3c", "floor-ca-certificates"],
+      "platforms": [
+        {"os": "linux", "locations": ["/etc/ssl/certs/ca-certificates.crt", "/etc/pki/tls/certs/ca-bundle.crt", "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem", "/etc/ssl/cert.pem", "/etc/ca-certificates/extracted/tls-ca-bundle.pem", "/usr/lib/ssl/cert.pem"], "note": "Debian and Ubuntu, RHEL and Fedora, Alpine and Arch respectively; the OpenSSL default path from `openssl version -d` settles which one the host's OpenSSL reads"},
+        {"os": "macos", "locations": ["/etc/ssl/cert.pem"], "note": "read by the built-in curl, git, python3, perl, ruby and openssl without revocation checks; separate from the Keychain"},
+        {"os": "freebsd", "locations": ["/etc/ssl/certs/", "/usr/share/certs/trusted/", "/usr/share/certs/untrusted/"], "note": "certctl list and certctl untrusted enumerate them"},
+        {"os": "netbsd", "locations": ["/etc/openssl/certs/", "/usr/share/certs/mozilla/all/"], "note": "certctl list enumerates them"}
+      ],
+      "required": true
+    },
+    {
+      "id": "env-bundles",
+      "store": "Bundles named by environment variables",
+      "indicators": ["root-emsign-tls-g3", "root-emsign-cs-g3", "root-sectigo-aaa", "root-emsign-ecc-g3", "ica-dv-g3b", "ica-ov-g3b", "ica-ev-g3b", "ica-dv-g3c", "ica-ov-g3c", "ica-ev-g3c", "ica-ov-cs-g3b", "ica-ov-cs-g3c"],
+      "platforms": [
+        {"os": "any", "locations": ["$SSL_CERT_FILE", "$SSL_CERT_DIR", "$REQUESTS_CA_BUNDLE", "$CURL_CA_BUNDLE", "$NODE_EXTRA_CA_CERTS", "$GIT_SSL_CAINFO", "$PIP_CERT", "$AWS_CA_BUNDLE"], "note": "an unset variable is established by reading the environment, not by an empty match"}
+      ],
+      "required": true
+    },
+    {
+      "id": "certifi",
+      "store": "Python certifi bundles",
+      "indicators": ["root-emsign-tls-g3", "root-emsign-cs-g3", "root-sectigo-aaa", "root-emsign-ecc-g3", "floor-bundle-libraries"],
+      "platforms": [
+        {"os": "any", "locations": ["site-packages/certifi/cacert.pem in every interpreter and virtualenv", "~/.cache/uv/archive-v0/*/certifi/cacert.pem", "~/.cache/pip", "conda and pixi environments", "pip's vendored copy: site-packages/pip/_vendor/certifi/cacert.pem"], "note": "present and used differ: on Debian and Ubuntu certifi.where() returns the system bundle. Report which file each interpreter resolves"}
+      ],
+      "required": true
+    },
+    {
+      "id": "java-cacerts",
+      "store": "Java cacerts keystore and blocked.certs",
+      "indicators": ["root-emsign-tls-g3", "root-emsign-cs-g3", "root-sectigo-aaa", "root-emsign-ecc-g3", "ica-dv-g3b", "ica-ov-g3b", "ica-ev-g3b", "ica-dv-g3c", "ica-ov-g3c", "ica-ev-g3c", "ica-ov-cs-g3b", "ica-ov-cs-g3c", "xsign-emsign-tls-g3-by-ecc-g3", "floor-runtimes"],
+      "platforms": [
+        {"os": "any", "locations": ["$JAVA_HOME/lib/security/cacerts", "$JAVA_HOME/lib/security/blocked.certs", "/usr/lib/jvm/*/lib/security/cacerts", "/etc/ssl/certs/java/cacerts (Debian, Ubuntu)", "/Library/Java/JavaVirtualMachines/*/Contents/Home/lib/security/cacerts (macOS)"], "note": "one keystore per JDK; blocked.certs is the distrust list. Required only when a JDK or JRE is installed; absence is established by looking for the binaries and directories, not by an empty keytool run"}
+      ],
+      "required": false
+    },
+    {
+      "id": "node-store",
+      "store": "Node.js compiled-in root store",
+      "indicators": ["root-emsign-tls-g3", "root-sectigo-aaa", "root-emsign-ecc-g3", "floor-runtimes"],
+      "platforms": [
+        {"os": "any", "locations": ["every node binary on PATH and under nvm, fnm, volta, asdf, mise and Homebrew"], "note": "required only when Node is installed. Bun, Deno and Electron apps are version-only (floor-runtimes)"}
+      ],
+      "required": false
+    },
+    {
+      "id": "macos-keychain",
+      "store": "macOS system root keychain and admin trust settings",
+      "indicators": ["root-emsign-tls-g3", "root-emsign-cs-g3", "root-sectigo-aaa", "root-emsign-ecc-g3", "ica-dv-g3b", "ica-ov-g3b", "ica-ev-g3b", "ica-dv-g3c", "ica-ov-g3c", "ica-ev-g3c", "ica-ov-cs-g3b", "ica-ov-cs-g3c"],
+      "platforms": [
+        {"os": "macos", "locations": ["/System/Library/Keychains/SystemRootCertificates.keychain", "/Library/Keychains/System.keychain", "~/Library/Keychains/login.keychain-db"], "note": "Apple distributes blocks through its Valid service separately from the root list, so a root present here is a present finding; whether this client is actually protected is only visible in the live check"}
+      ],
+      "required": true
+    },
+    {
+      "id": "windows-stores",
+      "store": "Windows certificate stores (Root, AuthRoot, CA, Disallowed) for LocalMachine and CurrentUser",
+      "indicators": ["root-emsign-tls-g3", "root-emsign-cs-g3", "root-sectigo-aaa", "root-emsign-ecc-g3", "ica-dv-g3b", "ica-ov-g3b", "ica-ev-g3b", "ica-dv-g3c", "ica-ov-g3c", "ica-ev-g3c", "ica-ov-cs-g3b", "ica-ov-cs-g3c", "xsign-emsign-tls-g3-by-ecc-g3"],
+      "platforms": [
+        {"os": "windows", "locations": ["Cert:\\LocalMachine\\Root", "Cert:\\LocalMachine\\AuthRoot", "Cert:\\LocalMachine\\CA", "Cert:\\LocalMachine\\Disallowed", "Cert:\\CurrentUser\\Root", "Cert:\\CurrentUser\\Disallowed"], "note": "a compromised certificate in Disallowed is the distrust record; an anchor in Root with the intermediates absent from Disallowed means the automatic trust-list update has not landed"}
+      ],
+      "required": true
+    },
+    {
+      "id": "nss-databases",
+      "store": "NSS databases (Firefox profiles, Chrome and Chromium on Linux, system nssdb)",
+      "indicators": ["root-emsign-tls-g3", "root-emsign-cs-g3", "root-sectigo-aaa", "root-emsign-ecc-g3", "ica-dv-g3b", "ica-ov-g3b", "ica-ev-g3b", "ica-dv-g3c", "ica-ov-g3c", "ica-ev-g3c", "ica-ov-cs-g3b", "ica-ov-cs-g3c", "floor-bundle-libraries"],
+      "platforms": [
+        {"os": "linux", "locations": ["~/.pki/nssdb", "~/.mozilla/firefox/*/cert9.db", "/etc/pki/nssdb", "libnssckbi.so (the built-in roots, version per NSS floor)"], "note": "browsers block the intermediates through OneCRL and CRLSets, so a root present here is a present finding and the browser is still protected; optional because the reader (nss-tools certutil) is often not installed"}
+      ],
+      "required": false
+    },
+    {
+      "id": "other-bundled",
+      "store": "Other bundled and compiled-in stores (curl bundle, Go, Rust, Electron apps, Claude Code, VS Code, Docker Desktop, Git for Windows, pip, uv, conda, rustup, mise, pixi)",
+      "indicators": ["floor-bundle-libraries", "floor-runtimes", "floor-applications"],
+      "platforms": [
+        {"os": "any", "locations": ["each application's own files; mostly not readable as PEM"], "note": "version evidence only. Required only for applications that are installed; the agent lists what it found and what it did not look for"}
+      ],
+      "required": false
+    }
+  ],
+  "limitations": [
+    "A store that contains an anchor is reported affected for clients that do not check revocation. A client that does check CRL or OCSP, or enforces Certificate Transparency, is protected despite the finding; the advisory cannot tell which clients those are.",
+    "Container images, virtual machines and remote hosts each carry their own stores and are not reached by commands run on this host. The agent lists images it can see as a gap unless the user runs the same read-only commands inside them.",
+    "Compiled-in stores (Go, Rust, Electron, Bun, Deno, most desktop applications) cannot be read; only the version floor applies and the report says so.",
+    "The patch-status floors were copied from the reference page on as_of and have no revision date of their own; a newer page may list more products or different versions.",
+    "Matching is by certificate SHA-256 and, where a store exposes it, SKI. Stores that show only SHA-1 thumbprints (Windows certutil default output) need the PowerShell block that computes SHA-256."
+  ],
+  "uncheckable": [
+    {"what": "Android devices", "why": "no command from this host reads a phone's system trust store or its Play services block list", "user_should": "open Settings, search Trusted credentials, System tab, and confirm emSign ECC Root CA - G3 and AAA Certificate Services are disabled or that the device has received the block; some vendors (HarmonyOS) do not allow disabling system roots"},
+    {"what": "Whether browsers on this machine received the block lists", "why": "OneCRL, CRLSets and CRLite state is inside each browser profile and is not exposed as a file this advisory can match", "user_should": "keep the browser updated; the reference site's in-browser checker and the opt-in live check show whether this browser still accepts the chains"},
+    {"what": "Whether Windows received the automatic certificate trust list update", "why": "the update populates the Disallowed store, which the Windows check reads, but a machine that is offline or has updates disabled shows the same empty Disallowed store as one that was never affected", "user_should": "run the Windows check and, if the compromised certificates are absent from Disallowed, treat the anchors as trusted"},
+    {"what": "Applications that pin or embed certificates in their own format", "why": "there is no general reader", "user_should": "check the vendor's advisory and the version floors in fix.md"}
+  ],
+  "remediation": {
+    "summary": "Upgrade the package or runtime that ships each affected store to the floor in the indicators; that is the durable fix. Where no fixed version exists yet, distrust the two Mozilla-program roots (emSign ECC Root CA - G3 and AAA Certificate Services) in the system store using the platform's blocklist mechanism, keeping the reference site's warnings: not for ordinary users on Linux, not for enterprise-managed Windows devices. Then re-run the check.",
+    "file": "fix.md"
+  },
+  "live_check": {
+    "operator": "Dennis Jackson (we-have-a-problem.com)",
+    "privacy": "Quoted from the source: \"The servers behind the checker record how many times each user-agent connects successfully, meaning it still trusts the compromised intermediates. Only these counts are recorded.\" A JSON dump with counts per JA4 fingerprint is also published.",
+    "hosts": [
+      {"host": "dv-g3b-emudhra.we-have-a-problem.com", "proves": "a successful TLS connection means this client trusts the compromised EM DV TLS CA - G3B via emSign Root TLS CA - G3 or its cross-sign", "negative_means": "a certificate error means this client, with the store it actually uses, does not trust that chain; it says nothing about other clients or stores on the host"},
+      {"host": "dv-g3b-aaa-emudhra.we-have-a-problem.com", "proves": "a successful TLS connection means this client trusts the compromised intermediate via the Sectigo AAA cross-sign", "negative_means": "a certificate error means this client does not trust that chain"},
+      {"host": "dv-g3b-noct-emudhra.we-have-a-problem.com", "proves": "the leaf was never logged to Certificate Transparency: success means this client trusts the intermediate and does not enforce CT, which is the client an attacker can hit without anyone noticing", "negative_means": "a certificate error means either the intermediate is not trusted or CT is enforced; compare with the host above to tell which"},
+      {"host": "dv-g3b-aaa-noct-emudhra.we-have-a-problem.com", "proves": "same as the no-CT test, via the AAA cross-sign", "negative_means": "same as the no-CT test"}
+    ]
+  }
+}

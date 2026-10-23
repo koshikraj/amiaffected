@@ -1,0 +1,11 @@
+{
+  "id": "positive-emsign-ecc-root",
+  "kind": "positive",
+  "advisory_revision": 2,
+  "coverage": "system-bundle",
+  "input": {"file": "affected-emsign-ecc-root-g3.pem"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["86A1ECBA089C4A8D3BBE2734C612BA341D813E043CF9E8A862CD5C57A36BBE6B", "emSign ECC Root CA - G3", "affected"]
+  }
+}
