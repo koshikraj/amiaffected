@@ -1,0 +1,12 @@
+{
+  "id": "positive-workers-not-restarted",
+  "kind": "positive",
+  "advisory_revision": 1,
+  "coverage": "running-workers",
+  "input": {"captured_output": "php-common-8.0.30-8.el9_8.x86_64\nphp-fpm-8.0.30-8.el9_8.x86_64\n-- block 0 done\nThu Oct 23 10:00:00 AM UTC 2026\n   2210 root     Sat Oct 11 03:14:52 2026 1061108 php-fpm\n   2211 apache   Sat Oct 11 03:14:52 2026 1061108 php-fpm\n   1198 root     Sat Oct 11 03:14:40 2026 1061120 httpd\nphp-common-8.0.30-8.el9_8.x86_64                Wed 22 Oct 2026 07:30:14 AM UTC\n-- block 3 done"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["8.0.30-8.el9_8", "Oct 11", "22 Oct", "restart", "affected"]
+  },
+  "note": "EL 9 package at its floor, but the php-fpm master and httpd started eleven days before the fixed package was installed. The running code is the old code. The remediation is the restart from fix.md, not another upgrade, and the report says so."
+}

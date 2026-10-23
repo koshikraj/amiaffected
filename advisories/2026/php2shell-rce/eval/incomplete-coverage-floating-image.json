@@ -1,0 +1,12 @@
+{
+  "id": "incomplete-coverage-floating-image",
+  "kind": "incomplete_coverage",
+  "advisory_revision": 1,
+  "coverage": "container-images",
+  "input": {"captured_output": "== docker images\nwordpress:latest 3f1a9c0b2d7e 2026-09-30 11:20:03 +0000 UTC\nmyshop/web:prod 8be2c4d1a0f3 2026-10-02 08:15:44 +0000 UTC\n-- wordpress:latest\nPHP_VERSION=8.3.35\n-- myshop/web:prod\n== docker running\nshop myshop/web:prod Up 3 weeks\n-- block 4 done"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["wordpress:latest", "8.3.35", "myshop/web:prod", "no PHP_VERSION", "affected", "gap"]
+  },
+  "note": "Two findings in one block. The wordpress image carries PHP_VERSION 8.3.35, one below the 8.3 floor: affected. The private image has no PHP_VERSION line and is running: a gap, reported by name, until block 0 and 1 run inside it. The affected finding fixes the verdict; the gap is still listed so the user does not read the image as fine."
+}

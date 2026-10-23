@@ -1,0 +1,12 @@
+{
+  "id": "stale-advisory-negative",
+  "kind": "stale",
+  "advisory_revision": 1,
+  "coverage": "all",
+  "input": {"captured_output": "(today is 2026-12-15; advisory.json review_by is 2026-11-23)\ndpkg-query: no packages found matching php*\n-- block 0 done\n-- block 1 done\n-- block 2 done\n-- block 3 done\n== docker images\n== docker running\n-- block 4 done"},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["review_by", "stale", "update", "unknown"]
+  },
+  "note": "No PHP found anywhere, but the advisory is past review_by at critical severity, so not_affected is not available: the floors may have moved. The provenance header flags staleness and the agent offers the update as its own step."
+}

@@ -1,0 +1,12 @@
+{
+  "id": "positive-ubuntu-2204-fpm",
+  "kind": "positive",
+  "advisory_revision": 1,
+  "coverage": "system-php",
+  "input": {"captured_output": "PRETTY_NAME=\"Ubuntu 22.04.5 LTS\"\nVERSION_ID=\"22.04\"\nphp8.1-cli 8.1.2-1ubuntu2.27 install ok installed\nphp8.1-common 8.1.2-1ubuntu2.27 install ok installed\nphp8.1-fpm 8.1.2-1ubuntu2.27 install ok installed\n-- block 0 done\n== /usr/bin/php resolves to /usr/bin/php8.1\nPHP 8.1.2-1ubuntu2.27 (cli) (built: Mar 12 2026 10:01:33) (NTS)\n-- block 1 done\nphp8.1-fpm.service loaded active running The PHP 8.1 FastCGI Process Manager\nsrw-rw---- 1 www-data www-data 0 Oct 20 04:11 /run/php/php8.1-fpm.sock\n/etc/nginx/sites-enabled/default\n-- block 2 done"},
+  "expected": {
+    "verdict": "affected",
+    "report_contains": ["8.1.2-1ubuntu2.27", "8.1.2-1ubuntu2.28", "below", "php8.1-fpm", "affected"]
+  },
+  "note": "Ubuntu 22.04 package one release below its floor (8.1.2-1ubuntu2.28 from USN-8948-1) with FPM serving behind nginx. The comparison is against the Ubuntu floor, not against upstream 8.1 which has no release at all; the report names the floor the user needs."
+}

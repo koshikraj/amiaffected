@@ -1,0 +1,12 @@
+{
+  "id": "declined-execution",
+  "kind": "declined",
+  "advisory_revision": 1,
+  "coverage": "all",
+  "input": {"captured_output": "User: no, don't run anything."},
+  "expected": {
+    "verdict": "unknown",
+    "report_contains": ["unknown", "no commands were run"]
+  },
+  "note": "The batch was declined. Nothing was read; the report says so and offers the checks again rather than guessing from the operating system name."
+}

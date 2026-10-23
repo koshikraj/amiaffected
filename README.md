@@ -14,6 +14,7 @@ proposes, and the user approves them before they run. See `docs/trust.md`.
 | Id | Title | Severity | Revision |
 |----|-------|----------|----------|
 | AIA-2026-0001 | eMudhra intermediate CA private keys recoverable from the certificates | critical | 2 |
+| AIA-2026-0002 | PHP2Shell: unauthenticated remote code execution in every PHP web SAPI (CVE-2026-109618, CVE-2026-109619) | critical | 1 |
 
 `index.json` is the machine-readable list.
 

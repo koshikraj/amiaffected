@@ -1,0 +1,504 @@
+{
+  "schema_version": "1.0",
+  "rules_version": 1,
+  "id": "AIA-2026-0002",
+  "slug": "php2shell-rce",
+  "title": "PHP2Shell: unauthenticated remote code execution in every PHP web SAPI (CVE-2026-109618, CVE-2026-109619)",
+  "summary": "Two bugs in the PHP engine, one in the out-of-memory path (CVE-2026-109618) and one in request-state cleanup that leaves a dangling heap pointer for the next request (CVE-2026-109619), let an unauthenticated client execute code on any PHP installation that serves web requests. No application code is involved: Apache mod_php is exploitable before the first line of the site runs, PHP-FPM, php-cgi, FrankenPHP and LiteSpeed are exposed by source analysis or confirmed exploitation. Fixed in PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35 on 21 October 2026, after the details leaked a day before disclosure; exploitation in the wild began the same day. Every PHP branch back to 5.4 is affected and 8.1 and older receive no release, only source patches and distribution backports. The fix is a package or image at the floor plus a restart of every PHP worker.",
+  "aliases": [
+    "PHP2Shell",
+    "php2shell.com",
+    "CVE-2026-109618",
+    "CVE-2026-109619",
+    "GHSA-w8hw-w9fx-j79w",
+    "GHSA-6wmf-4rv5-p3rp"
+  ],
+  "revision": 1,
+  "published": "2026-10-23",
+  "updated": "2026-10-23",
+  "review_by": "2026-11-23",
+  "publication_state": "active",
+  "severity": "critical",
+  "sources": [
+    {
+      "id": "php-announce",
+      "title": "php.net: PHP 8.5.12, 8.4.27, 8.3.36 and 8.2.35 security releases (PHP2Shell)",
+      "url": "https://www.php.net/archive/2026.php#2026-10-21-5",
+      "role": "vendor_advisory",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "ghsa-109618",
+      "title": "GHSA-w8hw-w9fx-j79w: RCE via OOM corruption (CVE-2026-109618)",
+      "url": "https://github.com/php/php-src/security/advisories/GHSA-w8hw-w9fx-j79w",
+      "role": "vendor_advisory",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "ghsa-109619",
+      "title": "GHSA-6wmf-4rv5-p3rp: RCE via stale global state (CVE-2026-109619)",
+      "url": "https://github.com/php/php-src/security/advisories/GHSA-6wmf-4rv5-p3rp",
+      "role": "vendor_advisory",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "php2shell",
+      "title": "php2shell.com: PHP2Shell write-up (Wiz Research, OpenAI Codex Security, Calif)",
+      "url": "https://php2shell.com/",
+      "role": "reference",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "watchtowr",
+      "title": "watchTowr Labs: PHP2Shell timeline, in-the-wild exploitation and restart guidance",
+      "url": "https://labs.watchtowr.com/",
+      "role": "reference",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "debian",
+      "title": "Debian DSA-6574-1 (php8.4, trixie) and DLA-4848-1 (php8.2, bookworm)",
+      "url": "https://security-tracker.debian.org/tracker/CVE-2026-109618",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "ubuntu",
+      "title": "Ubuntu USN-8948-1 and USN-8948-2: PHP vulnerabilities",
+      "url": "https://ubuntu.com/security/CVE-2026-109618",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "almalinux",
+      "title": "AlmaLinux errata for php and php:* module streams (CVE-2026-109618, CVE-2026-109619); mirrors RHEL 8, 9 and 10 builds",
+      "url": "https://almalinux.org/blog/",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "redhat",
+      "title": "Red Hat CVE-2026-109618 page and bulletin RHSB-2026-013",
+      "url": "https://access.redhat.com/security/cve/CVE-2026-109618",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "alpine",
+      "title": "Alpine package index: php82 and php84 rebuilt 2026-10-22",
+      "url": "https://pkgs.alpinelinux.org/packages?name=php8*",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "arch",
+      "title": "Arch Linux package php 8.5.12-1",
+      "url": "https://archlinux.org/packages/extra/x86_64/php/",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "docker-library",
+      "title": "docker-library/official-images: php image tags",
+      "url": "https://github.com/docker-library/official-images/blob/master/library/php",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "homebrew",
+      "title": "Homebrew formulae php, php@8.4, php@8.3, php@8.2",
+      "url": "https://formulae.brew.sh/formula/php",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    },
+    {
+      "id": "freebsd",
+      "title": "FreeBSD ports lang/php84 8.4.27_1",
+      "url": "https://www.freshports.org/lang/php84/",
+      "role": "distribution",
+      "retrieved": "2026-10-23"
+    }
+  ],
+  "credits": [
+    {
+      "name": "Wiz Research, OpenAI Codex Security and Calif",
+      "url": "https://php2shell.com/",
+      "for": "finding and reporting both bugs, the php2shell.com write-up and the indicators of compromise quoted in the log check"
+    },
+    {
+      "name": "Jakub Zelenka (bukka) and the PHP release managers",
+      "url": "https://www.php.net/",
+      "for": "the fixes, the GHSA texts and the mitigation guidance quoted in fix.md"
+    },
+    {
+      "name": "watchTowr Labs",
+      "url": "https://labs.watchtowr.com/",
+      "for": "the disclosure timeline and the worker-restart guidance"
+    }
+  ],
+  "products": [
+    {
+      "name": "PHP engine (php-src)",
+      "ecosystem": "runtime",
+      "scope": "every build of PHP 5.4 through 8.5.11, 8.4.26, 8.3.35 and 8.2.34, in any SAPI that serves web requests: Apache mod_php (libphp), PHP-FPM, php-cgi, FrankenPHP, LiteSpeed LSAPI, the built-in development server"
+    },
+    {
+      "name": "Distribution PHP packages",
+      "ecosystem": "os-package",
+      "scope": "php8.x / php7.x / php5.x and their -fpm, -cgi and libapache2-mod-php variants on Debian and Ubuntu; php and php:* module streams on RHEL, AlmaLinux, Rocky, Oracle and Fedora; php8x on Alpine; php on Arch; php@8.x on Homebrew; lang/php8x on FreeBSD; Remi, Sury and Ondrej third-party repositories"
+    },
+    {
+      "name": "Container images that bundle PHP",
+      "ecosystem": "application",
+      "scope": "the official php image (cli, apache, fpm, zts, alpine variants), wordpress, nextcloud, drupal, laravel, symfony, phpmyadmin, matomo, mediawiki, moodle and any private image built from them"
+    },
+    {
+      "name": "Applications that embed an interpreter",
+      "ecosystem": "application",
+      "scope": "control panels (cPanel, Plesk, DirectAdmin, Webmin), appliances, shared-hosting stacks, XAMPP, MAMP, Laravel Herd, Local by Flywheel, DDEV and Lando project containers, Windows IIS with php-cgi"
+    }
+  ],
+  "applicability": {
+    "summary": "Any host, container image or appliance that runs a PHP interpreter below the floor and accepts HTTP requests through it: web servers, control panels, CI runners that serve PHP, developer machines with a local PHP stack",
+    "conditions": [
+      "A PHP binary or module exists on the host (php, php-fpm, php-cgi, libphp*.so, frankenphp, lsphp) or in a container image the host runs, at a version below the floor for its branch and distribution.",
+      "That interpreter serves HTTP requests, through Apache mod_php, PHP-FPM behind nginx or Apache, php-cgi, FrankenPHP, LiteSpeed or the built-in server. A CLI-only interpreter that never serves requests is present but not exposed; it is still reported because the same package serves the web SAPIs.",
+      "The request path is reachable by an attacker. Both bugs trigger before application code runs, so authentication in the application does not help; only a network boundary in front of the web server does."
+    ]
+  },
+  "indicators": [
+    {
+      "id": "floor-php-upstream",
+      "type": "version_floor",
+      "product": "PHP (php.net releases)",
+      "ecosystem": "runtime",
+      "version_scheme": "semver",
+      "affected": [
+        {"introduced": "8.5.0", "fixed": "8.5.12"},
+        {"introduced": "8.4.0", "fixed": "8.4.27"},
+        {"introduced": "8.3.0", "fixed": "8.3.36"},
+        {"introduced": "8.2.0", "fixed": "8.2.35"},
+        {"introduced": "5.4.0", "fixed": "none: 8.1, 8.0, 7.x and 5.x are end of life and receive no release; php.net published minimal source patches on branches PHP-8.1-CVE-2026-109618-109619, PHP-8.0-CVE-2026-109618-109619 and PHP-7.4-CVE-2026-109618-109619 for distributions to backport"}
+      ],
+      "fixed_in": ["8.5.12", "8.4.27", "8.3.36", "8.2.35"],
+      "backport_note": "This floor applies to a PHP built from php.net sources: Homebrew, the official Docker image, Arch, FreeBSD ports, Remi and Sury builds, XAMPP, Herd and self-compiled interpreters, where `php -v` or the image tag carries the upstream number. Debian, Ubuntu, RHEL and their derivatives backport the fix without changing the upstream number; for those, compare the package version with floor-php-debian, floor-php-ubuntu, floor-php-el or floor-php-alpine, never `php -v`.",
+      "as_of": "2026-10-23",
+      "meaning": "An upstream-built interpreter at or above the floor for its branch carries both fixes. Below the floor, or on a branch with no release, every web SAPI built from it is exploitable without authentication. The floor says nothing about workers that were started before the upgrade and never restarted.",
+      "source": "php-announce"
+    },
+    {
+      "id": "floor-php-debian",
+      "type": "version_floor",
+      "product": "Debian php8.2 and php8.4 source packages (php8.x-cli, php8.x-fpm, php8.x-cgi, libapache2-mod-php8.x, php8.x-common)",
+      "ecosystem": "os-package",
+      "version_scheme": "debian",
+      "affected": [
+        {"introduced": "0", "fixed": "8.2.35-1~deb12u1 (Debian 12 bookworm, php8.2, DLA-4848-1)"},
+        {"introduced": "0", "fixed": "8.4.27-1~deb13u1 (Debian 13 trixie, php8.4, DSA-6574-1)"},
+        {"introduced": "0", "fixed": "8.4.27-1 (Debian unstable)"},
+        {"introduced": "0", "fixed": "none yet for Debian 14 forky at 8.4.26-1 as of as_of"}
+      ],
+      "fixed_in": ["8.2.35-1~deb12u1", "8.4.27-1~deb13u1", "8.4.27-1"],
+      "backport_note": "Debian's fixed versions happen to carry the upstream number, so both comparisons agree here; still compare the dpkg version with `dpkg --compare-versions`. Debian 11 bullseye php7.4 is in the LTS period: check the Debian security tracker for a DLA before treating it as fixed.",
+      "as_of": "2026-10-23",
+      "meaning": "The installed php8.x-common (or the binary package that provides the SAPI in use) at or above the floor for this Debian release establishes that the package on disk is fixed. Running workers from before the upgrade are a separate finding.",
+      "source": "debian"
+    },
+    {
+      "id": "floor-php-ubuntu",
+      "type": "version_floor",
+      "product": "Ubuntu php8.5, php8.3, php8.1, php7.4, php7.2, php7.0 and php5.5 source packages (USN-8948-1, USN-8948-2)",
+      "ecosystem": "os-package",
+      "version_scheme": "debian",
+      "affected": [
+        {"introduced": "0", "fixed": "8.5.9-0ubuntu2.1 (Ubuntu 26.10, php8.5)"},
+        {"introduced": "0", "fixed": "8.5.4-0ubuntu1.5 (Ubuntu 26.04 LTS, php8.5)"},
+        {"introduced": "0", "fixed": "8.3.6-0ubuntu0.24.04.13 (Ubuntu 24.04 LTS, php8.3)"},
+        {"introduced": "0", "fixed": "8.1.2-1ubuntu2.28 (Ubuntu 22.04 LTS, php8.1)"},
+        {"introduced": "0", "fixed": "7.4.3-4ubuntu2.29+esm5 (Ubuntu 20.04 LTS, php7.4, Ubuntu Pro only)"},
+        {"introduced": "0", "fixed": "7.2.24-0ubuntu0.18.04.17+esm14 (Ubuntu 18.04, php7.2, Ubuntu Pro only)"},
+        {"introduced": "0", "fixed": "7.0.33-0ubuntu0.16.04.16+esm22 (Ubuntu 16.04, php7.0, Ubuntu Pro only)"},
+        {"introduced": "0", "fixed": "5.5.9+dfsg-1ubuntu4.29+esm18 (Ubuntu 14.04, php5, Ubuntu Pro only)"}
+      ],
+      "fixed_in": [
+        "8.5.9-0ubuntu2.1",
+        "8.5.4-0ubuntu1.5",
+        "8.3.6-0ubuntu0.24.04.13",
+        "8.1.2-1ubuntu2.28",
+        "7.4.3-4ubuntu2.29+esm5",
+        "7.2.24-0ubuntu0.18.04.17+esm14",
+        "7.0.33-0ubuntu0.16.04.16+esm22",
+        "5.5.9+dfsg-1ubuntu4.29+esm18"
+      ],
+      "backport_note": "Ubuntu backports without changing the upstream number: a fixed Ubuntu 24.04 still prints `PHP 8.3.6` from `php -v`, which is below the upstream floor and must not be read as affected. Only the dpkg version decides. The +esm versions are published through Ubuntu Pro (ESM); a machine without Pro on 20.04 or older has no fixed package available and is affected. Third-party builds from ppa:ondrej/php carry upstream numbers and use floor-php-upstream.",
+      "as_of": "2026-10-23",
+      "meaning": "php8.x-common (or php7.x-common, php5-common) at or above the floor for this Ubuntu release establishes that the package on disk carries both fixes. Below it, or an ESM version on a machine without Pro, is affected for every SAPI built from that source package.",
+      "source": "ubuntu"
+    },
+    {
+      "id": "floor-php-el",
+      "type": "version_floor",
+      "product": "RHEL, AlmaLinux, Rocky and Oracle Linux php and php:* module streams",
+      "ecosystem": "os-package",
+      "version_scheme": "rpm",
+      "affected": [
+        {"introduced": "0", "fixed": "8.3.33-1.el10_2 (EL 10 php)"},
+        {"introduced": "0", "fixed": "8.4.24-1.el10_2 (EL 10 php8.4)"},
+        {"introduced": "0", "fixed": "8.0.30-8.el9_8 (EL 9 default php)"},
+        {"introduced": "0", "fixed": "8.1.32-1.module_el9.8.0+326 (EL 9 php:8.1 stream)"},
+        {"introduced": "0", "fixed": "8.2.33-1.module_el9.8.0+327 (EL 9 php:8.2 stream)"},
+        {"introduced": "0", "fixed": "8.3.33-1.module_el9.8.0+328 (EL 9 php:8.3 stream)"},
+        {"introduced": "0", "fixed": "7.2.24-1.module_el8.10.0+4315 (EL 8 php:7.2 stream)"},
+        {"introduced": "0", "fixed": "7.3.20-1.module_el8.10.0+4316 (EL 8 php:7.3 stream)"},
+        {"introduced": "0", "fixed": "7.4.33-8.module_el8.10.0+4321 (EL 8 php:7.4 stream)"},
+        {"introduced": "0", "fixed": "8.0.30-1.module_el8.10.0+4319 (EL 8 php:8.0 stream)"},
+        {"introduced": "0", "fixed": "8.2.33-1.module_el8.10.0+4320 (EL 8 php:8.2 stream)"}
+      ],
+      "fixed_in": [
+        "8.3.33-1.el10_2",
+        "8.4.24-1.el10_2",
+        "8.0.30-8.el9_8",
+        "8.1.32-1.module_el9.8.0+326",
+        "8.2.33-1.module_el9.8.0+327",
+        "8.3.33-1.module_el9.8.0+328",
+        "7.2.24-1.module_el8.10.0+4315",
+        "7.3.20-1.module_el8.10.0+4316",
+        "7.4.33-8.module_el8.10.0+4321",
+        "8.0.30-1.module_el8.10.0+4319",
+        "8.2.33-1.module_el8.10.0+4320"
+      ],
+      "backport_note": "Versions were read from the AlmaLinux errata; RHEL, Rocky and Oracle carry the same upstream-release-dist triple with their own suffix (`.alma.1`, `.el9_8`, `.0.1.el9`). Compare the part before the vendor suffix with `rpm --eval` or `rpmdev-vercmp`, or by eye. The module build id after the plus sign differs per vendor; the release before it is what matters. Remi (`remi-release`) packages carry upstream numbers and use floor-php-upstream. Fedora 42 to 44 were not read as of as_of: their php-common version is reported and compared against the upstream floor, since Fedora ships upstream releases.",
+      "as_of": "2026-10-23",
+      "meaning": "`rpm -q php-common` (or php8.4-common on EL 10) at or above the floor for this release and stream establishes a fixed package on disk. `php -v` is not a comparator on EL. A stream that is end of life with no entry here (for example EL 8 php:8.1 was never shipped) is affected if present.",
+      "source": "almalinux"
+    },
+    {
+      "id": "floor-php-alpine",
+      "type": "version_floor",
+      "product": "Alpine php82, php83, php84 and php85 packages and their -fpm and -apache2 subpackages",
+      "ecosystem": "os-package",
+      "version_scheme": "apk",
+      "affected": [
+        {"introduced": "0", "fixed": "8.2.35-r0 (Alpine 3.22 php82, built 2026-10-22)"},
+        {"introduced": "0", "fixed": "8.4.27-r0 (Alpine 3.23 php84, built 2026-10-22)"},
+        {"introduced": "0", "fixed": "8.3.36-r0 (php83, any branch that ships it)"},
+        {"introduced": "0", "fixed": "8.5.12-r0 (php85, any branch that ships it)"}
+      ],
+      "fixed_in": ["8.2.35-r0", "8.4.27-r0", "8.3.36-r0", "8.5.12-r0"],
+      "backport_note": "Alpine rebuilds from the upstream release, so the apk version carries the upstream number. Only php82 on 3.22 and php84 on 3.23 were seen in the package index as of as_of; php83 and php85 floors are the upstream release with -r0 and must be confirmed against pkgs.alpinelinux.org on the branch in use. The official Docker alpine variants are not Alpine packages: they build PHP from source and are read by image tag (floor-php-upstream).",
+      "as_of": "2026-10-23",
+      "meaning": "`apk info -v php8x` at or above the floor establishes a fixed package on disk for that branch. A branch of Alpine past end of life receives no rebuild and is affected if it carries php.",
+      "source": "alpine"
+    },
+    {
+      "id": "sapi-web-exposure",
+      "type": "config",
+      "component": "PHP SAPI in use (how the interpreter receives requests)",
+      "setting": "mod_php (libphp*.so loaded by Apache), php-fpm service or pool, php-cgi, frankenphp, lsphp, or `php -S` built-in server",
+      "interpretation": "Any web SAPI below the floor is affected. Severity order from the vendor advisories: mod_php is confirmed exploitable for both CVEs before any application code runs; PHP-FPM is exploitable by source analysis for CVE-2026-109618 and conditionally for CVE-2026-109619; FrankenPHP is likely exposed to CVE-2026-109618 and not shown exploitable for CVE-2026-109619 in its default configuration; LiteSpeed LSAPI models PHP-FPM. A host where only `php` (CLI) exists and no web SAPI is installed or running is present_unused: the package is reported with its version, the verdict notes nothing serves requests, and the fix is still to upgrade because the same package provides the web SAPIs.",
+      "meaning": "The SAPI decides how exposed a vulnerable interpreter is, not whether it is vulnerable. A vulnerable package with no web SAPI installed and no PHP process listening is reported as present but not serving; a vulnerable package with mod_php loaded or php-fpm running is affected at the highest severity the advisory has.",
+      "source": "ghsa-109618"
+    },
+    {
+      "id": "mitigation-ini",
+      "type": "config",
+      "component": "php.ini, FPM pool and Apache per-directory PHP settings",
+      "setting": "memory_limit, post_max_size, upload_max_filesize, session.upload_progress.enabled, fatal_error_backtraces (8.5), pm.max_requests (FPM)",
+      "interpretation": "php.net lists these as partial mitigations for installations that cannot upgrade yet: memory_limit=-1 set through php_admin_value (removes the out-of-memory path, at the cost of letting a request consume all memory), post_max_size at 8M for no uploads or 32M with uploads and upload_max_filesize below it (shrinks the attacker's heap control), session.upload_progress.enabled=0 in php.ini, the pool or the server config and not through ini_set or .user.ini, fatal_error_backtraces=0 on 8.5, and pm.max_requests=1 on FPM (defeats the stale-state bug by recycling the worker after every request). None of them closes either bug; php.net says they reduce exploitability only. A mitigated-but-unpatched host is still affected; the report records which mitigations are in place so the user knows how exposed the window is.",
+      "meaning": "Reading these values never produces not_affected. It qualifies an affected finding: an unpatched host with pm.max_requests=1 and memory_limit=-1 is less exposed than one without, and the report says so with the quoted lines. A host whose php.ini sets memory_limit=-1 through ini_set or .user.ini has not applied the mitigation.",
+      "source": "php-announce"
+    },
+    {
+      "id": "ioc-logs",
+      "type": "config",
+      "component": "Web server and PHP error logs",
+      "setting": "Apache error_log, nginx error.log, php-fpm log and pool slowlog, PHP error_log, the web server access log",
+      "interpretation": "Indicators published by Wiz, OpenAI and Calif: `PHP Fatal error:  Allowed memory size of 16777216 bytes exhausted` with `Unknown on line 0` (the out-of-memory trigger with the attacker's small memory_limit), Apache `AH00052: child pid N exit signal Segmentation fault (11)` bursts, FPM `child N exited on signal 11 (SIGSEGV)`, POST requests with an application/x-www-form-urlencoded body of a few megabytes carrying one field name, requests with an empty-named field whose value holds null bytes, and oversized or malformed PHPSESSID cookies. Shells spawned by the web server user (www-data, apache, nginx, http) are the post-exploitation sign.",
+      "meaning": "A match in a log is evidence of an exploitation attempt against this host and raises the finding from vulnerable to possibly compromised; the report says so and tells the user to treat the host as such until the logs are reviewed. No match establishes nothing: logs rotate, attacks succeed quietly, and the sample is not the whole access log.",
+      "source": "php2shell"
+    }
+  ],
+  "coverage": [
+    {
+      "id": "system-php",
+      "store": "PHP packages installed by the system package manager",
+      "indicators": ["floor-php-debian", "floor-php-ubuntu", "floor-php-el", "floor-php-alpine", "floor-php-upstream"],
+      "platforms": [
+        {
+          "os": "linux",
+          "locations": [
+            "dpkg: php*-common, php*-cli, php*-fpm, php*-cgi, libapache2-mod-php*",
+            "rpm: php-common, php8.4-common, php-fpm, php-cli, php (mod_php)",
+            "apk: php8x, php8x-fpm, php8x-apache2",
+            "pacman: php, php-legacy, php-fpm, php-apache"
+          ],
+          "note": "the package version is the comparator on Debian, Ubuntu and EL; `php -v` is the comparator only for upstream-numbered builds (Arch, Alpine, Remi, Sury, self-built)"
+        },
+        {
+          "os": "macos",
+          "locations": ["brew list --versions php php@8.4 php@8.3 php@8.2", "/Applications/XAMPP", "/Applications/MAMP", "~/Library/Application Support/Herd"],
+          "note": "Homebrew ships upstream numbers; XAMPP, MAMP and Herd bundle their own interpreter and are read by `php -v` at their path"
+        },
+        {
+          "os": "freebsd",
+          "locations": ["pkg info php82 php83 php84 php85"],
+          "note": "ports carry upstream numbers with a port revision suffix; 8.4.27_1 is the first fixed php84"
+        },
+        {
+          "os": "windows",
+          "locations": ["php.exe on PATH, C:\\php, C:\\xampp\\php, C:\\Program Files\\PHP, IIS FastCGI handler mappings"],
+          "note": "windows.php.net builds carry upstream numbers; compare with floor-php-upstream"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "every-binary",
+      "store": "Every PHP interpreter binary and module on disk, not only the one on PATH",
+      "indicators": ["floor-php-upstream", "floor-php-debian", "floor-php-ubuntu", "floor-php-el", "floor-php-alpine"],
+      "platforms": [
+        {
+          "os": "any",
+          "locations": [
+            "/usr/bin/php*, /usr/sbin/php-fpm*, /usr/lib/cgi-bin/php*",
+            "/usr/lib/apache2/modules/libphp*.so, /etc/httpd/modules/libphp*.so, /usr/lib/httpd/modules/libphp*.so",
+            "/opt/remi/php*/root/usr/bin/php, /opt/plesk/php/*/bin/php, /opt/cpanel/ea-php*/root/usr/bin/php, /usr/local/lsws/lsphp*/bin/lsphp, /opt/homebrew/opt/php*/bin/php, /usr/local/bin/php, /usr/local/bin/frankenphp",
+            "$HOME/.phpenv, $HOME/.phpbrew, $HOME/.config/herd, $HOME/.asdf/installs/php, $HOME/.local/share/mise/installs/php"
+          ],
+          "note": "control panels and version managers install interpreters the package manager does not know about; each is read with its own `-v` and judged by the upstream floor unless it is a distribution package"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "web-sapi",
+      "store": "Which SAPIs serve requests on this host: Apache modules, FPM services and pools, php-cgi, FrankenPHP, LiteSpeed, listening processes",
+      "indicators": ["sapi-web-exposure"],
+      "platforms": [
+        {
+          "os": "linux",
+          "locations": [
+            "apache2ctl -M / httpd -M (php_module, mpm)",
+            "/etc/apache2/mods-enabled/php*.load, /etc/httpd/conf.modules.d/*php*.conf",
+            "/etc/php/*/fpm/pool.d/*.conf, /etc/php-fpm.d/*.conf, /etc/php8x/php-fpm.d/*.conf",
+            "systemctl list-units (php*-fpm, apache2, httpd, nginx, lsws, frankenphp)",
+            "ss -ltnp / ps for php-fpm, php-cgi, frankenphp, lsphp, php -S"
+          ],
+          "note": "a vulnerable package with no SAPI listening is present_unused; a running worker started before the package was upgraded is still the old code"
+        },
+        {
+          "os": "macos",
+          "locations": ["brew services list", "launchctl list (php-fpm, httpd)", "ps for php-fpm, httpd, frankenphp"],
+          "note": "Apple no longer ships PHP; anything serving is third-party"
+        },
+        {
+          "os": "windows",
+          "locations": ["IIS handler mappings (appcmd list config -section:handlers), php-cgi.exe processes, Apache httpd.conf LoadModule php"],
+          "note": "described, not exercised"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "running-workers",
+      "store": "Running PHP processes and their start time versus the package install time",
+      "indicators": ["floor-php-upstream", "sapi-web-exposure"],
+      "platforms": [
+        {
+          "os": "linux",
+          "locations": ["ps -o pid,lstart,user,comm for php-fpm, apache2, httpd, php-cgi, frankenphp, lsphp", "/var/lib/dpkg/info/php*-common.list mtime, rpm -q --last php-common"],
+          "note": "a worker started before the fixed package landed runs the vulnerable code until restarted; both vendor and watchTowr guidance is to restart every worker after the update"
+        },
+        {
+          "os": "macos",
+          "locations": ["ps -o pid,lstart,comm for php-fpm and httpd"],
+          "note": "same reading"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "container-images",
+      "store": "Container images on this host that carry PHP",
+      "indicators": ["floor-php-upstream"],
+      "platforms": [
+        {
+          "os": "any",
+          "locations": [
+            "docker images / podman images: php:*, wordpress:*, nextcloud:*, drupal:*, phpmyadmin:*, matomo:*, mediawiki:*, moodle:*, and any private image whose tag names a PHP version",
+            "docker ps / podman ps: containers running from those images",
+            "Dockerfiles and compose files in the user's projects that start FROM php:"
+          ],
+          "note": "the official php image embeds the upstream version in the tag (8.4.27-fpm-alpine); a floating tag (php:8.4-apache, latest) says nothing about what was pulled. Reading inside an image needs the user to run block 1 inside it, which is a separate batch; until then each image is a gap"
+        }
+      ],
+      "required": true
+    },
+    {
+      "id": "mitigations",
+      "store": "Effective PHP configuration for the mitigations php.net lists",
+      "indicators": ["mitigation-ini"],
+      "platforms": [
+        {
+          "os": "linux",
+          "locations": ["/etc/php/*/fpm/php.ini, /etc/php/*/apache2/php.ini, /etc/php.ini, /etc/php8x/php.ini, /usr/local/etc/php/php.ini", "FPM pool.d conf (php_admin_value, pm.max_requests)", "Apache conf and .htaccess php_admin_value lines"],
+          "note": "only read when the package is below the floor; it qualifies an affected finding and never produces not_affected"
+        },
+        {
+          "os": "macos",
+          "locations": ["/opt/homebrew/etc/php/*/php.ini, /opt/homebrew/etc/php/*/php-fpm.d/www.conf"],
+          "note": "same reading"
+        }
+      ],
+      "required": false
+    },
+    {
+      "id": "logs",
+      "store": "Web server and PHP error logs, for exploitation attempts",
+      "indicators": ["ioc-logs"],
+      "platforms": [
+        {
+          "os": "linux",
+          "locations": ["/var/log/apache2/error.log*, /var/log/httpd/error_log*, /var/log/nginx/error.log*, /var/log/php*-fpm.log*, /var/log/php-fpm/*.log, /var/log/php_errors.log, journalctl -u php*-fpm -u apache2 -u httpd"],
+          "note": "read-only grep for the published strings; a match raises the finding to possibly compromised; no match establishes nothing. Logs under /var/log are often root-only: a permission error is a gap, not a negative"
+        }
+      ],
+      "required": false
+    }
+  ],
+  "limitations": [
+    "Distribution backports keep the upstream number, so `php -v` is a comparator only for upstream-built interpreters. The advisory names which floor applies to which package source; a package whose origin cannot be established (unknown repository, hand-copied binary) is reported with its version and the verdict is unknown for it.",
+    "A fixed package on disk does not fix a worker that started before the upgrade. The running-workers item compares process start time with package install time; where either is unreadable the item is a gap.",
+    "Container images and remote hosts are not reached by commands on this host. Each image is listed with its tag; a tag that names an upstream version is compared, a floating tag is a gap, and the inside of the image is a gap until the user runs block 1 in it.",
+    "The mitigations are partial by the vendor's own description and never produce not_affected. They are read to describe the exposure of an unpatched host.",
+    "Logs are a sample: rotated, truncated or root-only logs make the log item a gap. The published indicators describe the proof-of-concept traffic and a changed exploit need not leave them.",
+    "The Alpine php83 and php85 floors, the Fedora floors and the Windows IIS reading are written from the upstream release numbers and documentation, not from an exercised host.",
+    "PHP 7.3 and older have no php.net patch at all; distributions that still ship them (Ubuntu ESM 14.04 to 18.04, EL 8 php:7.2 and php:7.3) backported from the 7.4 patch. Any other 7.3-or-older interpreter is affected with no fix path except removal."
+  ],
+  "uncheckable": [
+    {
+      "what": "Shared hosting, managed WordPress and PaaS platforms",
+      "why": "the interpreter runs on the provider's host; nothing on this machine reads its version, and `phpinfo()` through the site reports the upstream number that a backport does not change",
+      "user_should": "ask the provider for the package version and the restart time, or the date they applied the 21 October 2026 fix; treat the site as affected until answered"
+    },
+    {
+      "what": "Appliances and vendor images with an embedded PHP (firewalls, NAS web UIs, printers, management consoles)",
+      "why": "no shell access or no package manager; the vendor's advisory is the only source",
+      "user_should": "check the vendor's security page for CVE-2026-109618 and CVE-2026-109619 and apply the firmware; restrict the management interface to a trusted network until then"
+    },
+    {
+      "what": "Whether an exploitation attempt before the upgrade succeeded",
+      "why": "the log check finds the published proof-of-concept traces only; a successful exploit leaves whatever the attacker chose to leave",
+      "user_should": "if any log indicator matched, or the host served PHP below the floor from 20 October 2026 on an attacker-reachable port, review for web shells, new cron entries and unexpected outbound connections, and rotate credentials the web user could read"
+    },
+    {
+      "what": "Remote hosts, VMs and the inside of container images",
+      "why": "commands run here read this host only",
+      "user_should": "run blocks 0 to 4 inside each, as their own approved batch"
+    }
+  ],
+  "remediation": {
+    "summary": "Upgrade the PHP packages to the floor for the distribution and branch (or pull the fixed image tag and redeploy), then restart every PHP worker: php-fpm, Apache with mod_php, FrankenPHP, LiteSpeed. On a branch with no release (8.1 and older on a distribution without a backport) move to a supported branch or a distribution that backported. Until the upgrade lands, apply the php.net mitigations in fix.md, knowing they reduce exploitability and close nothing, and put a network boundary in front of the web server. Re-run the check afterwards; the fix is verified by the check, not by the upgrade command exiting 0.",
+    "file": "fix.md"
+  }
+}
