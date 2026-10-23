@@ -4,17 +4,22 @@ Everything stays local. Facts are paths, types and versions; gaps are
 first-class and are consumed by the matcher. The collector never elevates
 and never walks the whole disk: it looks at known locations plus the scan
 roots the user passed in, to a bounded depth.
+
+The collector never executes anything. It records paths; the readers in
+`pem` decide, against their own allowlists, which of those may be read by
+running a runtime (keytool, node).
 """
 import datetime as _dt
 import glob
 import os
 import platform
 import shutil
+import site
 import socket
-import subprocess
-import sys
+import sysconfig
 
 from . import __version__
+from . import pem
 
 INVENTORY_VERSION = "0.1"
 SCAN_DEPTH = 6
@@ -66,7 +71,7 @@ class Collector:
 
     def store(self, kind, store_type, path, readable=None):
         path = os.path.abspath(path) if store_type != "node_bundled" else path
-        key = (store_type, path)
+        key = (store_type, os.path.realpath(path) if store_type != "node_bundled" else path)
         if key in self._seen:
             return
         self._seen.add(key)
@@ -109,24 +114,36 @@ class Collector:
             paths.append(os.path.join(jh, "lib", "security", "cacerts"))
         for pat in JAVA_GLOBS:
             paths.extend(glob.glob(pat))
-        paths = [p for p in paths if os.path.isfile(p)]
-        if paths and not shutil.which("keytool"):
-            self.gap("java keystores", "keytool not in PATH; %d cacerts found but cannot be read" % len(paths))
         for p in paths:
-            self.store("java", "java_keystore", p)
+            if os.path.isfile(p):
+                self.store("java", "java_keystore", p)
+        # keytool is never taken from PATH: the reader runs the keytool that
+        # belongs to the JVM owning each cacerts, and only at allowlisted
+        # JVM locations. Nothing to record here beyond the files.
+
+    def _site_dirs(self):
+        dirs = []
+        try:
+            dirs.extend(site.getsitepackages())
+        except AttributeError:  # some embedded interpreters
+            pass
+        try:
+            dirs.append(site.getusersitepackages())
+        except AttributeError:
+            pass
+        dirs.append(sysconfig.get_paths().get("purelib"))
+        return [d for d in dict.fromkeys(dirs) if d]
 
     def certifi(self):
         if not self.include_certifi:
             self.gap("certifi bundles", "excluded by caller")
             return
-        # the interpreter running us, isolated so cwd modules cannot shadow certifi
-        try:
-            proc = subprocess.run([sys.executable, "-I", "-c", "import certifi,sys;sys.stdout.write(certifi.where())"],
-                                  capture_output=True, text=True, timeout=15, check=False)
-            if proc.returncode == 0 and proc.stdout.strip():
-                self.store("certifi:%s" % sys.executable, "pem_bundle", proc.stdout.strip())
-        except (OSError, subprocess.SubprocessError) as exc:
-            self.gap("certifi for %s" % sys.executable, str(exc))
+        # The running interpreter's certifi, found on disk. We do not import
+        # certifi: importing executes the package we are about to judge.
+        for d in self._site_dirs():
+            candidate = os.path.join(d, "certifi", "cacert.pem")
+            if os.path.isfile(candidate):
+                self.store("certifi:interpreter", "pem_bundle", candidate)
         for root in self.scan_roots:
             if not os.path.isdir(root):
                 self.gap("scan root %s" % root, "not a directory")
@@ -143,9 +160,13 @@ class Collector:
         if not self.include_node:
             self.gap("node bundled store", "excluded by caller")
             return
-        node = shutil.which("node")
-        if node:
-            self.store("node", "node_bundled", node, readable=True)
+        found = [p for p in pem.allowed_node_paths() if os.path.isfile(p)]
+        for p in found:
+            self.store("node", "node_bundled", p, readable=True)
+        on_path = shutil.which("node")
+        if on_path and os.path.abspath(on_path) not in found and os.path.realpath(on_path) not in map(os.path.realpath, found):
+            self.gap("node at %s" % on_path,
+                     "found on PATH but not an allowlisted executable; pass --node-bin %s to inspect it" % on_path)
         extra = os.environ.get("NODE_EXTRA_CA_CERTS")
         if extra and os.path.isfile(extra):
             self.store("node:extra", "pem_bundle", extra)

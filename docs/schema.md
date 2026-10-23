@@ -65,6 +65,21 @@ Per advisory: `result_version`, `advisory_id`, `advisory_revision`,
 Evidence is fingerprints, counts, paths and versions. Never PEM bodies,
 environment variables or secrets.
 
+### Top-level check document
+
+`amiaffected check` wraps the per-advisory results in one document:
+
+| field | meaning |
+|---|---|
+| `verdict` | combined verdict across advisories, after the freshness rule |
+| `data.kind` | `bundle` when running from a release bundle (BUNDLE.json present), else `source-tree` |
+| `data.source_commit`, `data.built_at` | from BUNDLE.json; null for a source tree |
+| `data.revision` | SHA-256 over the digests of every advisory file, sorted |
+| `data.freshness` | `max_age_days`, `age_days`, `stale`, `note`. A stale bundle downgrades `not_affected` to `unknown`; positive findings stand |
+| `runtime.executed` | absolute paths of every external program that ran (keytool, node) |
+| `runtime.network`, `runtime.writes`, `runtime.privileges` | always `none`, `none`, current user |
+| `runtime.sandbox` | states that the tool does not sandbox itself; the host must |
+
 ## Exit codes
 
 | Code | Verdict |

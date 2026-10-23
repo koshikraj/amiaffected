@@ -44,6 +44,31 @@ def load_advisory(path):
     return doc
 
 
+def data_revision(advisory_paths):
+    """SHA-256 over the digests of every advisory file, in sorted path order.
+    The same advisory set yields the same revision wherever it is built."""
+    h = hashlib.sha256()
+    for p in sorted(advisory_paths):
+        h.update(load_advisory(p)["_digest"].encode("ascii"))
+        h.update(b"\n")
+    return h.hexdigest()
+
+
+def bundle_info(start=None):
+    """BUNDLE.json beside the package when running from a release bundle,
+    else a marker saying this is a source tree."""
+    here = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    path = os.path.join(start or here, "BUNDLE.json")
+    try:
+        with open(path, encoding="utf-8") as fh:
+            info = json.load(fh)
+    except (OSError, ValueError):
+        return {"kind": "source-tree", "version": __version__, "built_at": None, "source_commit": None}
+    info = dict(info)
+    info["kind"] = "bundle"
+    return info
+
+
 def _combine(verdicts):
     if "affected" in verdicts:
         return "affected"

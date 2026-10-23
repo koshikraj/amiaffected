@@ -1,20 +1,30 @@
 """amiaffected command line.
 
-    amiaffected inventory [--scan-root DIR ...]
-    amiaffected check     [--advisories DIR] [--advisory ID] [--inventory FILE] [--scan-root DIR ...]
+    amiaffected inventory [--scan-root DIR ...] [--node-bin PATH ...]
+    amiaffected check     [--advisories DIR] [--advisory ID] [--inventory FILE]
+                          [--scan-root DIR ...] [--node-bin PATH ...]
     amiaffected validate  [--advisories DIR]
 
 check exits 0 not_affected, 1 affected, 2 unknown (also on any internal error).
+
+The check never uses the network, never writes, never elevates, and only
+executes the runtimes listed in the result's `runtime.executed`. Scope
+defaults to known system locations; add --scan-root for directories where
+project virtualenvs or caches live.
 """
 import argparse
+import datetime as _dt
 import json
 import os
 import sys
 
-from . import EXIT_CODES, __version__
+from . import EXIT_CODES, MAX_DATA_AGE_DAYS, __version__
 from . import inventory as inv
-from . import matcher, schema
+from . import matcher, pem, schema
 from .rules import certificate_trust
+
+SANDBOX_NOTE = ("not enforced by amiaffected; run under the host's sandbox (read-only filesystem, "
+                "no network) where available")
 
 
 def _print(doc):
@@ -22,9 +32,22 @@ def _print(doc):
     sys.stdout.write("\n")
 
 
+def _apply_node_bins(args):
+    for p in getattr(args, "node_bin", None) or []:
+        ap = os.path.abspath(p)
+        if not os.path.isabs(p) or not os.path.isfile(ap):
+            sys.stderr.write("amiaffected: --node-bin %s must be an absolute path to an existing file\n" % p)
+            raise SystemExit(EXIT_CODES["unknown"])
+        pem.EXTRA_EXECUTABLES.add(ap)
+
+
+def _collect(args):
+    return inv.collect(scan_roots=args.scan_root, include_node=not args.no_node, include_java=not args.no_java)
+
+
 def cmd_inventory(args):
-    doc = inv.collect(scan_roots=args.scan_root, include_node=not args.no_node, include_java=not args.no_java)
-    _print(doc)
+    _apply_node_bins(args)
+    _print(_collect(args))
     return 0
 
 
@@ -37,13 +60,38 @@ def _load_inventory(args):
             sys.stderr.write("amiaffected: inventory invalid:\n  " + "\n  ".join(errs) + "\n")
             raise SystemExit(EXIT_CODES["unknown"])
         return doc
-    return inv.collect(scan_roots=args.scan_root, include_node=not args.no_node, include_java=not args.no_java)
+    return _collect(args)
+
+
+def _freshness(info):
+    """Stale bundle data must not reassure. Source trees are development
+    mode and are reported as such rather than aged."""
+    out = {"max_age_days": MAX_DATA_AGE_DAYS, "age_days": None, "stale": False, "note": None}
+    if info.get("kind") != "bundle" or not info.get("built_at"):
+        out["note"] = "running from a source tree; data age not enforced"
+        return out
+    try:
+        built = _dt.datetime.fromisoformat(info["built_at"].replace("Z", "+00:00"))
+    except ValueError:
+        out["stale"] = True
+        out["note"] = "BUNDLE.json built_at is unreadable; treating data as stale"
+        return out
+    age = (_dt.datetime.now(_dt.timezone.utc) - built).days
+    out["age_days"] = age
+    if age > MAX_DATA_AGE_DAYS:
+        out["stale"] = True
+        out["note"] = ("bundle data is %d days old (limit %d); not_affected is downgraded to unknown. "
+                       "Install a newer verified release." % (age, MAX_DATA_AGE_DAYS))
+    return out
 
 
 def cmd_check(args):
+    _apply_node_bins(args)
     inventory = _load_inventory(args)
     root = args.advisories or matcher.advisory_root()
     paths = matcher.find_advisories(root)
+    if not paths:
+        sys.stderr.write("amiaffected: no advisories under %s\n" % root)
     results = []
     for p in paths:
         adv = matcher.load_advisory(p)
@@ -53,8 +101,37 @@ def cmd_check(args):
             continue
         results.append(matcher.check_advisory(adv, inventory))
     overall = matcher._combine([r["verdict"] for r in results])
-    _print({"result_version": matcher.RESULT_VERSION, "verdict": overall,
-            "advisories_checked": len(results), "results": results})
+
+    info = matcher.bundle_info()
+    fresh = _freshness(info)
+    if fresh["stale"] and overall == "not_affected":
+        overall = "unknown"
+        for r in results:
+            if r["verdict"] == "not_affected":
+                r["verdict"] = "unknown"
+                r["limitations"] = list(r.get("limitations", [])) + [fresh["note"]]
+
+    _print({
+        "result_version": matcher.RESULT_VERSION,
+        "verdict": overall,
+        "advisories_checked": len(results),
+        "data": {
+            "kind": info.get("kind"),
+            "version": info.get("version", __version__),
+            "source_commit": info.get("source_commit"),
+            "built_at": info.get("built_at"),
+            "revision": matcher.data_revision(paths) if paths else None,
+            "freshness": fresh,
+        },
+        "runtime": {
+            "network": "none",
+            "writes": "none",
+            "privileges": "current user, never elevated",
+            "executed": sorted(set(pem.EXECUTED)),
+            "sandbox": SANDBOX_NOTE,
+        },
+        "results": results,
+    })
     return EXIT_CODES[overall]
 
 
@@ -109,6 +186,8 @@ def build_parser():
     def common(sp):
         sp.add_argument("--scan-root", action="append", default=[], metavar="DIR",
                         help="also look for certifi bundles under DIR (bounded depth); repeatable")
+        sp.add_argument("--node-bin", action="append", default=[], metavar="PATH",
+                        help="absolute path to a node binary you authorise this run to execute; repeatable")
         sp.add_argument("--no-node", action="store_true", help="skip the node bundled store")
         sp.add_argument("--no-java", action="store_true", help="skip java keystores")
 
