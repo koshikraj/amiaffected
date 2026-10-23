@@ -27,6 +27,14 @@ python3 -m amiaffected inventory      # what would be inspected, as JSON
 python3 -m amiaffected validate       # check advisory files and run fixtures
 ```
 
+## Use from an agent
+
+The check flow is also packaged as a skill at `skills/check/SKILL.md`.
+Copy that folder into your agent's skills directory (for Claude Code,
+`~/.claude/skills/amiaffected-check/`) and ask "am I affected by
+<incident>?". The skill runs the same CLI, locally and unprivileged, and
+reports the verdict, the gaps and the ordered remediation.
+
 ## Advisories
 
 | ID | Incident | Rule | Maturity |
@@ -56,5 +64,6 @@ formats.
 advisories/<year>/<slug>/   advisory.json, advisory.md, fix.md, fixtures/
 amiaffected/                stdlib Python: inventory, matcher, rules, CLI
 docs/                       schema and user-facing documentation
+skills/check/               agent skill wrapping the check flow
 tests/                      unittest suite; CI runs validate + tests
 ```
