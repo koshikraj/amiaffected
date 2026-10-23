@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.venv/
+dist/
+build/
+*.egg-info/
+.DS_Store
+scratch/
+
+# local plans, notes, dev lifecycle. never committed
+.local/
