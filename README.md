@@ -98,3 +98,8 @@ skills/check/               agent skill text; tools/build_bundle.py adds the cod
 tools/                      bundle builder and launcher used by the release workflow
 tests/                      unittest suite; CI runs validate + tests
 ```
+
+## License
+
+Apache-2.0. See [LICENSE](LICENSE). The license travels inside every release
+bundle.

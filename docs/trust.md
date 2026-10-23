@@ -92,7 +92,5 @@ attesting it.
 
 - No release has been published, so the attestation command above has
   nothing to verify yet.
-- The repository license is undecided. Until it is, treat this as
-  all-rights-reserved and review before use.
 - NSS databases, Windows and macOS keychains, and container images are not
   read in v0 and are reported as gaps.
