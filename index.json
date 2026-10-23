@@ -1,0 +1,34 @@
+{
+  "schema_version": "1.0",
+  "updated": "2026-10-23",
+  "count": 1,
+  "advisories": [
+    {
+      "id": "AIA-2026-0001",
+      "slug": "emudhra-ca-key-leak",
+      "path": "advisories/2026/emudhra-ca-key-leak",
+      "title": "eMudhra intermediate CA private keys recoverable from the certificates",
+      "severity": "critical",
+      "revision": 2,
+      "published": "2026-10-23",
+      "updated": "2026-10-23",
+      "review_by": "2026-11-23",
+      "publication_state": "active",
+      "rules_version": 1,
+      "applicability": "Any machine, container image or runtime that carries a CA trust store: Linux, macOS, Windows or BSD, plus every bundled copy in Python, Java, Node, Go, Rust and desktop applications",
+      "products": [
+        "System CA bundles",
+        "Python certifi",
+        "Java cacerts",
+        "Node.js",
+        "Other bundled stores",
+        "Windows and macOS system stores"
+      ],
+      "indicator_types": [
+        "certificate",
+        "version_floor"
+      ],
+      "live_check": true
+    }
+  ]
+}
